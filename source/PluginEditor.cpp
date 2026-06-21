@@ -1,110 +1,135 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
-// ==============================================================================
 PluginEditor::PluginEditor (PluginProcessor& p)
-    : AudioProcessorEditor (&p), processor (p)
+    : AudioProcessorEditor (&p), processor (p), oledDisplay (p)
 {
-    // 1. Add and configure the Central OLED Display
     addAndMakeVisible (oledDisplay);
 
-    // 2. Configure the 8 Scale-Degree Faders (Bottom row)
+    // Bottom faders
     juce::Slider* faders[] = { &fader1, &fader2, &fader3, &fader4, &fader5, &fader6, &fader7, &fader8 };
     juce::Label* faderLabels[] = { &faderLabel1, &faderLabel2, &faderLabel3, &faderLabel4, &faderLabel5, &faderLabel6, &faderLabel7, &faderLabel8 };
-    
-    // Dynamic note reading labels based on our planned Scale Degree layout
     juce::String scaleNotes[] = { "C", "D", "Eb", "F", "G", "Ab", "Bb", "C" };
 
     for (int i = 0; i < 8; ++i)
     {
         faders[i]->setSliderStyle (juce::Slider::LinearVertical);
         faders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-        faders[i]->setColour (juce::Slider::thumbColourId, juce::Colour (0xFF00D2FF)); // Neon Aqua
+        faders[i]->setColour (juce::Slider::thumbColourId, juce::Colour (0xFF00D2FF));
         faders[i]->setColour (juce::Slider::trackColourId, juce::Colour (0xFF112233));
         addAndMakeVisible (faders[i]);
 
         faderLabels[i]->setText (scaleNotes[i], juce::dontSendNotification);
-        faderLabels[i]->setFont (juce::Font ("Consolas", 14.0f, juce::Font::bold));
+        faderLabels[i]->setFont (juce::FontOptions (14.0f).withStyle ("bold"));
         faderLabels[i]->setJustificationType (juce::Justification::centred);
         faderLabels[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF888888));
         addAndMakeVisible (faderLabels[i]);
     }
 
-    // 3. Configure the Left Sidebar Knobs (Rhythm)
+    // Left sidebar knobs
     juce::Slider* leftKnobs[] = { &rhythmMorphKnob, &restKnob, &legatoKnob };
-    juce::String leftNames[] = { "Rhy-Morph", "Rest", "Legato" };
-    
     for (int i = 0; i < 3; ++i)
     {
         leftKnobs[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         leftKnobs[i]->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 65, 16);
         leftKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFF00D2FF));
-        leftKnobs[i]->setColour (juce::Slider::textBoxOutlineColourId, juce::Colour (0x00000000)); // Transparent border
+        leftKnobs[i]->setColour (juce::Slider::textBoxOutlineColourId, juce::Colour (0x00000000));
         leftKnobs[i]->setColour (juce::Slider::textBoxTextColourId, juce::Colour (0xFF888888));
         addAndMakeVisible (leftKnobs[i]);
     }
 
-    // 4. Configure the Right Sidebar Knobs (Harmony & Chaos)
+    // Right sidebar knobs
     juce::Slider* rightKnobs[] = { &entropyKnob, &harmonyKnob, &chaosKnob };
-    juce::String rightNames[] = { "Entropy", "Harmony", "Chaos" };
-
     for (int i = 0; i < 3; ++i)
     {
         rightKnobs[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag);
         rightKnobs[i]->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 65, 16);
-        rightKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFFFFB300)); // Warm Amber
+        rightKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFFFFB300));
         rightKnobs[i]->setColour (juce::Slider::textBoxOutlineColourId, juce::Colour (0x00000000));
         rightKnobs[i]->setColour (juce::Slider::textBoxTextColourId, juce::Colour (0xFF888888));
         addAndMakeVisible (rightKnobs[i]);
     }
 
-    // 5. Configure the Octatrack-style Scene Morph Crossfader
+    // Crossfader
     morphCrossfader.setSliderStyle (juce::Slider::LinearHorizontal);
     morphCrossfader.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
-    morphCrossfader.setColour (juce::Slider::thumbColourId, juce::Colour (0xFFFFFFFF)); // Ice White Slider
+    morphCrossfader.setColour (juce::Slider::thumbColourId, juce::Colour (0xFFFFFFFF));
     morphCrossfader.setColour (juce::Slider::trackColourId, juce::Colour (0xFF222222));
     addAndMakeVisible (morphCrossfader);
 
-    // 6. Configure Buttons
+    // Latch toggle
     addAndMakeVisible (latchButton);
     latchButton.setButtonText ("LATCH");
+    latchButton.setClickingTogglesState (true); // Force toggle behavior
     latchButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF112233));
     latchButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF00D2FF));
+    latchButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xFF00D2FF));
+    latchButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
 
+    // DICE Buttons
     addAndMakeVisible (diceMelodyButton);
     diceMelodyButton.setButtonText ("DICE M");
     diceMelodyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
     diceMelodyButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFFB300));
+    diceMelodyButton.onClick = [this] { processor.diceMelody(); };
 
     addAndMakeVisible (diceRhythmButton);
     diceRhythmButton.setButtonText ("DICE R");
     diceRhythmButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
     diceRhythmButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFFB300));
+    diceRhythmButton.onClick = [this] { processor.diceRhythm(); };
 
-    // Scene Edit buttons
+    // Scene Capture System (Octatrack Style)
     addAndMakeVisible (sceneAButton);
     sceneAButton.setButtonText ("A");
     sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
     sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFCCCCCC));
+    sceneAButton.onClick = [this] {
+        processor.captureSceneA();
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF00D2FF)); // Glow cyan when captured
+    };
 
     addAndMakeVisible (sceneBButton);
     sceneBButton.setButtonText ("B");
     sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
     sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFCCCCCC));
+    sceneBButton.onClick = [this] {
+        processor.captureSceneB();
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFB300)); // Glow amber when captured
+    };
 
-    // 7. Configure the 8 OLED-Style Preset Buttons
+    // 8 Preset Slots (Recall on click / Save on 2.0s hold)
     for (int i = 0; i < 8; ++i)
     {
         addAndMakeVisible (presetButtons[i]);
         presetButtons[i].setButtonText (juce::String (i + 1));
-        presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF0a0a0a));
-        // Soft outer-edge indicator glow (Muted blue/purple for blank slots initially)
+        presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505));
         presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF444444));
+
+        presetButtons[i].onStateChange = [this, i] {
+            if (presetButtons[i].isDown())
+            {
+                presetPressStartTime[i] = juce::Time::getMillisecondCounter();
+            }
+            else if (presetPressStartTime[i] != 0)
+            {
+                uint32 elapsed = juce::Time::getMillisecondCounter() - presetPressStartTime[i];
+                presetPressStartTime[i] = 0;
+
+                if (elapsed >= 2000) // 2.0s Hold -> Save
+                {
+                    processor.savePreset(i);
+                    presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF003344));
+                }
+                else // Tap -> Recall
+                {
+                    processor.loadPreset(i);
+                }
+            }
+        };
     }
 
-    // ==============================================================================
-    // Bind all GUI sliders and buttons to our APVTS variables under-the-hood
-    // ==============================================================================
+    // Parameter Bindings
     fader1Attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::fader1.getParamID(), fader1);
     fader2Attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::fader2.getParamID(), fader2);
     fader3Attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::fader3.getParamID(), fader3);
@@ -125,40 +150,59 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     morphAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::morph.getParamID(), morphCrossfader);
     latchAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::latch.getParamID(), latchButton);
 
-    // Set the overall window scale (Width, Height)
     setSize (750, 480);
+    startTimerHz (30);
 }
 
-PluginEditor::~PluginEditor()
+PluginEditor::~PluginEditor() { stopTimer(); }
+
+void PluginEditor::timerCallback()
 {
+    float morphValue = morphCrossfader.getValue();
+    
+    // Smoothly glide on-screen controls in real-time when the morph crossfader is moved
+    if (processor.hasSceneA && processor.hasSceneB && morphValue > 0.01f)
+    {
+        juce::Slider* faders[] = { &fader1, &fader2, &fader3, &fader4, &fader5, &fader6, &fader7, &fader8 };
+        for (int i = 0; i < 8; ++i)
+        {
+            float targetValue = (processor.sceneA.faders[i] * (1.0f - morphValue)) + (processor.sceneB.faders[i] * morphValue);
+            faders[i]->setValue (targetValue, juce::sendNotificationSync); // Broadcast value change to parameters
+        }
+
+        rhythmMorphKnob.setValue ((processor.sceneA.rhythmMorph * (1.0f - morphValue)) + (processor.sceneB.rhythmMorph * morphValue), juce::sendNotificationSync);
+        restKnob.setValue ((processor.sceneA.rest * (1.0f - morphValue)) + (processor.sceneB.rest * morphValue), juce::sendNotificationSync);
+        legatoKnob.setValue ((processor.sceneA.legato * (1.0f - morphValue)) + (processor.sceneB.legato * morphValue), juce::sendNotificationSync);
+        entropyKnob.setValue ((processor.sceneA.entropy * (1.0f - morphValue)) + (processor.sceneB.entropy * morphValue), juce::sendNotificationSync);
+        harmonyKnob.setValue ((processor.sceneA.harmony * (1.0f - morphValue)) + (processor.sceneB.harmony * morphValue), juce::sendNotificationSync);
+        chaosKnob.setValue ((processor.sceneA.chaos * (1.0f - morphValue)) + (processor.sceneB.chaos * morphValue), juce::sendNotificationSync);
+    }
+
+    // Keep Preset glow updated
+    for (int i = 0; i < 8; ++i)
+    {
+        if (processor.isPresetSaved (i))
+            presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF003344));
+    }
 }
 
-// ==============================================================================
 void PluginEditor::paint (juce::Graphics& g)
 {
-    // Dark Minimalist Chassis Background (Premium hardware texture)
     g.fillAll (juce::Colour (0xFF141416));
-
-    // Outer Chassis Bevel Accent
     g.setColour (juce::Colour (0xFF232326));
     g.drawRect (getLocalBounds().toFloat(), 3.0f);
 
-    // Section Titles
     g.setFont (juce::FontOptions (12.0f).withStyle ("bold"));
     g.setColour (juce::Colour (0xFF55555c));
     g.drawText ("RHYTHM", 15, 12, 100, 20, juce::Justification::left);
     g.drawText ("GENERATOR", getWidth() - 115, 12, 100, 20, juce::Justification::right);
 }
 
-// ==============================================================================
-// This is our screen layout algorithm. It carves up the window area into stable 
-// bounds so that our OLED display, side controls, and faders never overlap.
-// ==============================================================================
 void PluginEditor::resized()
 {
     auto area = getLocalBounds().reduced (15);
 
-    // 1. Bottom Section: 8 Scale-Degree Faders (Take up 115 pixels vertically)
+    // 1. Bottom Section: 8 Scale-Degree Faders
     auto bottomArea = area.removeFromBottom (115);
     auto faderLabelArea = bottomArea.removeFromBottom (20);
     int faderWidth = bottomArea.getWidth() / 8;
@@ -175,30 +219,26 @@ void PluginEditor::resized()
         faderLabels[i]->setBounds (labelColumn);
     }
 
-    // Space Divider
     area.removeFromBottom (10);
 
-    // 2. Scene Morph Crossfader (Take up 35 pixels)
+    // 2. Scene Morph Crossfader
     auto morphArea = area.removeFromBottom (35);
     sceneAButton.setBounds (morphArea.removeFromLeft (35).reduced (0, 3));
     sceneBButton.setBounds (morphArea.removeFromRight (35).reduced (0, 3));
     morphCrossfader.setBounds (morphArea.reduced (10, 5));
 
-    // Space Divider
     area.removeFromBottom (10);
 
     // 3. Sidebars
     auto leftSidebar = area.removeFromLeft (95);
     auto rightSidebar = area.removeFromRight (95);
     
-    // Left Sidebar: Knobs & Latch Button
     int leftRowHeight = leftSidebar.getHeight() / 4;
     rhythmMorphKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
     restKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
     legatoKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
     latchButton.setBounds (leftSidebar.reduced (10, 8));
 
-    // Right Sidebar: Knobs & DICE Buttons
     int rightRowHeight = rightSidebar.getHeight() / 4;
     entropyKnob.setBounds (rightSidebar.removeFromTop (rightRowHeight).reduced (2));
     harmonyKnob.setBounds (rightSidebar.removeFromTop (rightRowHeight).reduced (2));
@@ -210,11 +250,8 @@ void PluginEditor::resized()
 
     // 4. Center Section: OLED Display & 8 Preset Buttons
     auto presetArea = area.removeFromBottom (32);
-    
-    // OLED screen gets the remaining middle real estate
     oledDisplay.setBounds (area.reduced (5, 5));
 
-    // Position the 8 Preset buttons directly underneath the OLED display
     int presetWidth = presetArea.getWidth() / 8;
     for (int i = 0; i < 8; ++i)
     {
