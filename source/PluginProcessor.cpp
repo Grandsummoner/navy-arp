@@ -17,48 +17,18 @@ PluginProcessor::~PluginProcessor() {}
 const juce::String PluginProcessor::getName() const { return JucePlugin_Name; }
 bool PluginProcessor::acceptsMidi() const { return true; }
 bool PluginProcessor::producesMidi() const { return true; }
+bool PluginProcessor::isMidiEffect() const { return false; }
+double PluginProcessor::getTailLengthSeconds() const { return 0.0; }
+int PluginProcessor::getNumPrograms() { return 1; }
+int PluginProcessor::getCurrentProgram() { return 0; }
+void PluginProcessor::setCurrentProgram (int index) { juce::ignoreUnused (index); }
+const juce::String PluginProcessor::getProgramName (int index) { juce::ignoreUnused (index); return {}; }
+void PluginProcessor::changeProgramName (int index, const juce::String& newName) { juce::ignoreUnused (index, newName); }
 
-bool PluginProcessor::isMidiEffect() const
-{
-    return false; // MUST be standard Instrument to allow 2-track routing in Ableton
-}
-
-double PluginProcessor::getTailLengthSeconds() const
-{
-    return 0.0;
-}
-
-int PluginProcessor::getNumPrograms()
-{
-    return 1;
-}
-
-int PluginProcessor::getCurrentProgram()
-{
-    return 0;
-}
-
-void PluginProcessor::setCurrentProgram (int index)
-{
-    juce::ignoreUnused (index);
-}
-
-const juce::String PluginProcessor::getProgramName (int index)
-{
-    juce::ignoreUnused (index);
-    return {};
-}
-
-void PluginProcessor::changeProgramName (int index, const juce::String& newName)
-{
-    juce::ignoreUnused (index, newName);
-}
-
-// ==============================================================================
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     mSampleRate = sampleRate;
-    mTimeInSamples = 0;
+    mLastStep = -1;
     mLastNotePlayed = -1;
     mNoteOffTime = 0;
     activeHeldNotes.clear();
@@ -75,21 +45,51 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
 
-    if (layouts.getMainOutputChannelSet() != layouts.getMainInputChannelSet())
-        return false;
-
     return true;
 }
 
 // ==============================================================================
-// REAL-TIME ARPEGGIATOR MIDI CLOCK ENGINE (WITH ROBUST DECREMENTING NOTE-OFFS)
+// REAL-TIME PPQ-SYNCHRONIZED MIDI SEQUENCER (BLUEARP ARCHITECTURE)
 // ==============================================================================
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     // Clear audio buffer outputs to prevent NaNs/Subnormals
     buffer.clear();
 
-    // Read parameters
+    // 1. Query DAW Transport State
+    bool isPlaying = false;
+    double bpm = 120.0;
+    double ppqPosition = 0.0;
+
+    if (auto* playhead = getPlayHead())
+    {
+        if (auto pos = playhead->getPosition())
+        {
+            isPlaying = pos->getIsPlaying();
+            
+            auto bpmOpt = pos->getBpm();
+            if (bpmOpt.hasValue())
+                bpm = *bpmOpt;
+
+            auto ppqOpt = pos->getPpqPosition();
+            if (ppqOpt.hasValue())
+                ppqPosition = *ppqOpt;
+        }
+    }
+
+    // 2. BLUEARP STANDARD RULE: If DAW is stopped, pass all MIDI notes straight through untouched
+    if (! isPlaying)
+    {
+        // Standalone Latch check: If latch is on, let it run; otherwise, bypass entirely
+        bool isLatchActive = *apvts.getRawParameterValue (IDs::latch.getParamID()) > 0.5f;
+        if (! isLatchActive)
+        {
+            currentStep = 0;
+            return; 
+        }
+    }
+
+    // 3. Intercept & Parse Incoming keyboard MIDI Notes
     float activeFaderProb[8];
     for (int i = 0; i < 8; ++i)
         activeFaderProb[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1)));
@@ -98,7 +98,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     float activeLegato = *apvts.getRawParameterValue (IDs::legato.getParamID());
     bool isLatchActive = *apvts.getRawParameterValue (IDs::latch.getParamID()) > 0.5f;
 
-    // 1. Monitor incoming keyboard pressed MIDI keys
     juce::MidiBuffer processedMidi;
     for (const auto metadata : midiMessages)
     {
@@ -107,14 +106,12 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         {
             int note = msg.getNoteNumber();
             
-            // Add to active fingers-on-keys tracker
             if (std::find (activeHeldNotes.begin(), activeHeldNotes.end(), note) == activeHeldNotes.end())
             {
                 activeHeldNotes.push_back (note);
                 std::sort (activeHeldNotes.begin(), activeHeldNotes.end());
             }
 
-            // Latch Mode: If starting a brand new chord, wipe the latch memory
             if (isLatchActive)
             {
                 if (isFirstNoteOfNewChord)
@@ -134,7 +131,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             int note = msg.getNoteNumber();
             activeHeldNotes.erase (std::remove (activeHeldNotes.begin(), activeHeldNotes.end(), note), activeHeldNotes.end());
             
-            // If all physical keys are released, flag that the next note starts a new chord
             if (activeHeldNotes.empty())
             {
                 isFirstNoteOfNewChord = true;
@@ -143,10 +139,9 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     }
     midiMessages.clear();
 
-    // Determine the active chord notes to play from (latch memory vs. active fingers)
     const auto& notesToPlay = isLatchActive ? latchedNotes : activeHeldNotes;
     
-    // 2. Decrement the Note Off Timer if a note is currently playing
+    // 4. Decrement active note-off timers
     int numSamples = buffer.getNumSamples();
     if (mLastNotePlayed != -1)
     {
@@ -158,29 +153,18 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         }
     }
 
-    // 3. Increment MIDI Clock and generate new arpeggiated steps
+    // 5. PPQ-Grid Step Trigger Logic
     if (! notesToPlay.empty())
     {
-        double bpm = 120.0;
-        if (auto* playhead = getPlayHead())
+        // 1/16th note step length in PPQ is exactly 0.25 (1 beat = 1.0 PPQ)
+        double stepLengthPPQ = 0.25;
+        int stepIndex = static_cast<int> (std::floor (ppqPosition / stepLengthPPQ)) % 8;
+
+        // Only trigger when the playhead actually crosses a step boundary
+        if (stepIndex != mLastStep)
         {
-            if (auto pos = playhead->getPosition())
-            {
-                auto bpmOpt = pos->getBpm();
-                if (bpmOpt.hasValue())
-                    bpm = *bpmOpt;
-            }
-        }
-
-        double samplesPerBeat = mSampleRate * (60.0 / bpm);
-        double stepLengthInSamples = samplesPerBeat * 0.25;
-
-        mTimeInSamples += numSamples;
-
-        if (mTimeInSamples >= stepLengthInSamples)
-        {
-            mTimeInSamples = 0;
-            currentStep = (currentStep + 1) % 8;
+            mLastStep = stepIndex;
+            currentStep = stepIndex;
 
             float stepProbability = activeFaderProb[currentStep];
             bool shouldPlay = (juce::Random::getSystemRandom().nextFloat() <= stepProbability);
@@ -188,7 +172,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
             if (shouldPlay && ! isRest)
             {
-                // If another note is currently playing, turn it off immediately
                 if (mLastNotePlayed != -1)
                 {
                     processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0);
@@ -201,13 +184,14 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                 processedMidi.addEvent (juce::MidiMessage::noteOn (1, targetNote, static_cast<juce::uint8>(100)), 0);
                 mLastNotePlayed = targetNote;
                 
-                // Calculate the Note Off duration (samples until this note is turned off)
-                mNoteOffTime = static_cast<int>(stepLengthInSamples * activeLegato);
+                double samplesPerBeat = mSampleRate * (60.0 / bpm);
+                mNoteOffTime = static_cast<int>(samplesPerBeat * stepLengthPPQ * activeLegato);
             }
         }
     }
     else
     {
+        mLastStep = -1;
         currentStep = 0;
     }
 

@@ -38,7 +38,7 @@ public:
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
 
-    const juce::String getName() const override;
+    const juce::String PluginProcessor::getName() const override;
     bool acceptsMidi() const override;
     bool producesMidi() const override;
     bool isMidiEffect() const override;
@@ -79,9 +79,9 @@ private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
 
     double mSampleRate = 44100.0;
-    int mTimeInSamples = 0;
     
-    // Standard robust integer trackers for active play state
+    // Beat-grid playhead tracking variables
+    int mLastStep = -1;
     int mLastNotePlayed = -1;
     int mNoteOffTime = 0; 
     
