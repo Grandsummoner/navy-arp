@@ -49,7 +49,10 @@ public:
                                       barHeight);
 
             // Bright Sharp Neon-Glow pulse on the active step
-            if (i == processor.currentStep && (! processor.activeHeldNotes.empty() || *processor.apvts.getRawParameterValue (IDs::latch.getParamID()) > 0.5f))
+            bool isLatchActive = *processor.apvts.getRawParameterValue (IDs::latch.getParamID()) > 0.5f;
+            bool isPlaying = isLatchActive ? !processor.latchedNotes.empty() : !processor.activeHeldNotes.empty();
+
+            if (i == processor.currentStep && isPlaying)
             {
                 g.setColour (juce::Colour (0xFF00FFFF)); // Highlight electric blue
                 g.fillRect (bar.expanded(2, 2));

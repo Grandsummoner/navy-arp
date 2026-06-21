@@ -35,6 +35,8 @@ void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
     mTimeInSamples = 0;
     mLastNotePlayed = -1;
     activeHeldNotes.clear();
+    latchedNotes.clear();
+    isFirstNoteOfNewChord = true;
 }
 
 void PluginProcessor::releaseResources() {}
@@ -56,6 +58,9 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     #endif
 }
 
+// ==============================================================================
+// REAL-TIME ARPEGGIATOR MIDI CLOCK ENGINE (WITH LATCH CHORD MEMORY)
+// ==============================================================================
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     auto totalNumInputChannels  = getTotalNumInputChannels();
@@ -69,7 +74,9 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
     float activeRest = *apvts.getRawParameterValue (IDs::rest.getParamID());
     float activeLegato = *apvts.getRawParameterValue (IDs::legato.getParamID());
+    bool isLatchActive = *apvts.getRawParameterValue (IDs::latch.getParamID()) > 0.5f;
 
+    // 3. Monitor physical keyboard pressed MIDI keys
     juce::MidiBuffer processedMidi;
     for (const auto metadata : midiMessages)
     {
@@ -77,23 +84,47 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         if (msg.isNoteOn())
         {
             int note = msg.getNoteNumber();
+            
+            // Add to active fingers-on-keys tracker
             if (std::find (activeHeldNotes.begin(), activeHeldNotes.end(), note) == activeHeldNotes.end())
             {
                 activeHeldNotes.push_back (note);
                 std::sort (activeHeldNotes.begin(), activeHeldNotes.end());
+            }
+
+            // Latch Mode: If starting a brand new chord, wipe the latch memory
+            if (isLatchActive)
+            {
+                if (isFirstNoteOfNewChord)
+                {
+                    latchedNotes.clear();
+                    isFirstNoteOfNewChord = false;
+                }
+                if (std::find (latchedNotes.begin(), latchedNotes.end(), note) == latchedNotes.end())
+                {
+                    latchedNotes.push_back (note);
+                    std::sort (latchedNotes.begin(), latchedNotes.end());
+                }
             }
         }
         else if (msg.isNoteOff())
         {
             int note = msg.getNoteNumber();
             activeHeldNotes.erase (std::remove (activeHeldNotes.begin(), activeHeldNotes.end(), note), activeHeldNotes.end());
+            
+            // If all physical keys are released, flag that the next note starts a new chord
+            if (activeHeldNotes.empty())
+            {
+                isFirstNoteOfNewChord = true;
+            }
         }
     }
     midiMessages.clear();
 
-    bool isLatchActive = *apvts.getRawParameterValue (IDs::latch.getParamID()) > 0.5f;
+    // Determine the active chord notes to play from (latch memory vs. active fingers)
+    const auto& notesToPlay = isLatchActive ? latchedNotes : activeHeldNotes;
     
-    if (! activeHeldNotes.empty() || isLatchActive)
+    if (! notesToPlay.empty())
     {
         double bpm = 120.0;
         if (auto* playhead = getPlayHead())
@@ -121,7 +152,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             bool shouldPlay = (juce::Random::getSystemRandom().nextFloat() <= stepProbability);
             bool isRest = (juce::Random::getSystemRandom().nextFloat() <= activeRest);
 
-            if (shouldPlay && ! isRest && ! activeHeldNotes.empty())
+            if (shouldPlay && ! isRest)
             {
                 if (mLastNotePlayed != -1)
                 {
@@ -129,8 +160,8 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                     mLastNotePlayed = -1;
                 }
 
-                int pitchIndex = currentStep % activeHeldNotes.size();
-                int targetNote = activeHeldNotes[pitchIndex];
+                int pitchIndex = currentStep % notesToPlay.size();
+                int targetNote = notesToPlay[pitchIndex];
                 
                 processedMidi.addEvent (juce::MidiMessage::noteOn (1, targetNote, static_cast<juce::uint8>(100)), 0);
                 mLastNotePlayed = targetNote;
@@ -139,6 +170,11 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     }
     else
     {
+        if (mLastNotePlayed != -1)
+        {
+            processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0);
+            mLastNotePlayed = -1;
+        }
         currentStep = 0;
     }
 

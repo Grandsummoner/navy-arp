@@ -60,7 +60,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     // Latch toggle
     addAndMakeVisible (latchButton);
     latchButton.setButtonText ("LATCH");
-    latchButton.setClickingTogglesState (true); // Force toggle behavior
+    latchButton.setClickingTogglesState (true);
     latchButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF112233));
     latchButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF00D2FF));
     latchButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xFF00D2FF));
@@ -79,14 +79,22 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     diceRhythmButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFFB300));
     diceRhythmButton.onClick = [this] { processor.diceRhythm(); };
 
-    // Scene Capture System (Octatrack Style)
+    // Toggle-to-Capture / Toggle-to-Clear Scenes
     addAndMakeVisible (sceneAButton);
     sceneAButton.setButtonText ("A");
     sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
     sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFCCCCCC));
     sceneAButton.onClick = [this] {
-        processor.captureSceneA();
-        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF00D2FF)); // Glow cyan when captured
+        if (processor.hasSceneA)
+        {
+            processor.hasSceneA = false;
+            sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
+        }
+        else
+        {
+            processor.captureSceneA();
+            sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF00D2FF));
+        }
     };
 
     addAndMakeVisible (sceneBButton);
@@ -94,8 +102,16 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
     sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFCCCCCC));
     sceneBButton.onClick = [this] {
-        processor.captureSceneB();
-        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFB300)); // Glow amber when captured
+        if (processor.hasSceneB)
+        {
+            processor.hasSceneB = false;
+            sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
+        }
+        else
+        {
+            processor.captureSceneB();
+            sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFB300));
+        }
     };
 
     // 8 Preset Slots (Recall on click / Save on 2.0s hold)
@@ -109,17 +125,17 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         presetButtons[i].onStateChange = [this, i] {
             if (presetButtons[i].isDown())
             {
-                presetPressStartTime[i] = juce::Time::getMillisecondCounter();
+                presetPressStartTime[i] = static_cast<int> (juce::Time::getMillisecondCounter());
             }
             else if (presetPressStartTime[i] != 0)
             {
-                int elapsed = static_cast<int> (juce::Time::getMillisecondCounter() - presetPressStartTime[i]);
+                int elapsed = static_cast<int> (juce::Time::getMillisecondCounter()) - presetPressStartTime[i];
                 presetPressStartTime[i] = 0;
 
                 if (elapsed >= 2000) // 2.0s Hold -> Save
                 {
                     processor.savePreset(i);
-                    presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF003344)); // Outer edge glow enabled
+                    presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF003344));
                 }
                 else // Tap -> Recall
                 {
@@ -151,7 +167,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     latchAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::latch.getParamID(), latchButton);
 
     setSize (750, 480);
-    startTimerHz (30); // Refreshes visual elements like faders gliding in morph mode
+    startTimerHz (30);
 }
 
 PluginEditor::~PluginEditor() { stopTimer(); }
