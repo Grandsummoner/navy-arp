@@ -21,14 +21,45 @@ PluginProcessor::~PluginProcessor() {}
 const juce::String PluginProcessor::getName() const { return JucePlugin_Name; }
 bool PluginProcessor::acceptsMidi() const { return true; }
 bool PluginProcessor::producesMidi() const { return true; }
-bool PluginProcessor::isMidiEffect() const { return false; }
-double PluginProcessor::getTailLengthSeconds() const { return 0.0; }
-int PluginProcessor::getNumPrograms() { return 1; }
-int PluginProcessor::getCurrentProgram() { return 0; }
-void PluginProcessor::setCurrentProgram (int index) { juce::ignoreUnused (index); }
-const juce::String PluginProcessor::getProgramName (int index) { juce::ignoreUnused (index); return {}; }
-void PluginProcessor::changeProgramName (int index, const juce::String& newName) { juce::ignoreUnused (index, newName); }
 
+// FORCE native MIDI Effect format so Ableton hosts us directly in the MIDI effect lane
+bool PluginProcessor::isMidiEffect() const
+{
+    return true; 
+}
+
+double PluginProcessor::getTailLengthSeconds() const
+{
+    return 0.0;
+}
+
+int PluginProcessor::getNumPrograms()
+{
+    return 1;
+}
+
+int PluginProcessor::getCurrentProgram()
+{
+    return 0;
+}
+
+void PluginProcessor::setCurrentProgram (int index)
+{
+    juce::ignoreUnused (index);
+}
+
+const juce::String PluginProcessor::getProgramName (int index)
+{
+    juce::ignoreUnused (index);
+    return {};
+}
+
+void PluginProcessor::changeProgramName (int index, const juce::String& newName)
+{
+    juce::ignoreUnused (index, newName);
+}
+
+// ==============================================================================
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     mSampleRate = sampleRate;
@@ -181,6 +212,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     midiMessages.swapWith(processedMidi);
 }
 
+// ==============================================================================
 bool PluginProcessor::hasEditor() const { return true; }
 juce::AudioProcessorEditor* PluginProcessor::createEditor() { return new PluginEditor (*this); }
 
