@@ -1,6 +1,6 @@
 #pragma once
 
-#include <JuceHeader.h>
+#include <juce_audio_processors/juce_audio_processors.h>
 
 // ==============================================================================
 // Parameter IDs representing all physical controls on the UI
