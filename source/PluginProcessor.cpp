@@ -271,7 +271,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             bool isRatchetStep = euclidRatchets[currentStep] == 1;
 
             bool shouldPlay = (juce::Random::getSystemRandom().nextFloat() <= faderProb);
-            bool isRest = (juce::Random::getSystemRandom().nextFloat() <= modRest);
+            bool isRest = (juce::Random::getSystemRandom().nextFloat() <= activeRest);
 
             if (shouldPlay && ! isRest)
             {
