@@ -97,6 +97,7 @@ private:
     int mTimeInSamples = 0;
     double mSongPositionPPQ = 0.0;
     
+    // Core parameters for arpeggiation tracking (Crucial!)
     int mLastStep = -1;
     int mLastNotePlayed = -1;
     int mNoteOffTime = 0; 
