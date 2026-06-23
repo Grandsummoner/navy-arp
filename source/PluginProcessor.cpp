@@ -76,7 +76,6 @@ bool PluginProcessor::isBusesLayoutSupported (const BusesLayout& layouts) const
     if (layouts.getMainOutputChannelSet() != juce::AudioChannelSet::mono()
      && layouts.getMainOutputChannelSet() != juce::AudioChannelSet::stereo())
         return false;
-
     return true;
 }
 
@@ -280,7 +279,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         }
         else
         {
-            // Clock 2: Standalone Sample Clock
+            // Clock 2: Standalone Free-Running Sample-Clock
             mTimeInSamples += numSamples;
             if (mTimeInSamples >= stepSamples)
             {
@@ -303,7 +302,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             bool isRatchetStep = euclidRatchets[currentStep] == 1;
 
             bool shouldPlay = (juce::Random::getSystemRandom().nextFloat() <= faderProb);
-            bool isRest = (juce::Random::getSystemRandom().nextFloat() <= activeRest);
+            bool isRest = (juce::Random::getSystemRandom().nextFloat() <= modRest);
 
             if (shouldPlay && ! isRest)
             {
@@ -504,16 +503,6 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     params.push_back (std::make_unique<juce::AudioParameterFloat> (IDs::chaos, "Chaos", 0.0f, 1.0f, 0.0f));
     params.push_back (std::make_unique<juce::AudioParameterFloat> (IDs::morph, "Morph Crossfader", 0.0f, 1.0f, 0.0f));
     params.push_back (std::make_unique<juce::AudioParameterBool>  (IDs::latch, "Latch Mode", false));
-    params.push_back (std::make_unique<juce::AudioParameterBool>  (IDs::chordMode, "Chord Mode", false));
-
-    params.push_back (std::make_unique<juce::AudioParameterChoice> (IDs::rootKey, "Root Key", 
-        juce::StringArray { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B" }, 0));
-
-    params.push_back (std::make_unique<juce::AudioParameterChoice> (IDs::scaleType, "Scale", 
-        juce::StringArray { "Major", "Natural Minor", "Pentatonic Minor", "Pentatonic Major", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Harmonic Minor", "Melodic Minor" }, 1));
-
-    params.push_back (std::make_unique<juce::AudioParameterChoice> (IDs::cycleLength, "Cycle Length", 
-        juce::StringArray { "1 Bar", "2 Bars", "4 Bars", "8 Bars" }, 2)); // Default 4 Bars
 
     return { params.begin(), params.end() };
 }

@@ -72,7 +72,8 @@ public:
     void resetRhythm();
     void triggerDiatonicChordPad (int padIndex);
 
-    void triggerArpStep (float stepProbability, float activeRest, float activeLegato, const std::vector<int>& notesToPlay, juce::MidiBuffer& processedMidi, double bpm);
+    // Simplified trigger function (reads LFO states directly from class members)
+    void triggerArpStep (float stepProbability, const std::vector<int>& notesToPlay, juce::MidiBuffer& processedMidi, double bpm);
 
     SceneState sceneA;
     SceneState sceneB;
@@ -98,7 +99,6 @@ private:
     int mTimeInSamples = 0;
     double mSongPositionPPQ = 0.0;
     
-    // Core parameters for arpeggiation tracking (Crucial!)
     int mLastStep = -1;
     int mLastNotePlayed = -1;
     int mNoteOffTime = 0; 
