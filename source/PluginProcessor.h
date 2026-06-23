@@ -1,5 +1,4 @@
-#ifndef NAVY_ARP_PROCESSOR_H
-#define NAVY_ARP_PROCESSOR_H
+#pragma once
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
@@ -12,8 +11,7 @@ namespace IDs
     DECLARE_ID(fader5); DECLARE_ID(fader6); DECLARE_ID(fader7); DECLARE_ID(fader8);
     DECLARE_ID(rhythmMorph); DECLARE_ID(rest); DECLARE_ID(legato);
     DECLARE_ID(entropy); DECLARE_ID(harmony); DECLARE_ID(chaos);
-    DECLARE_ID(morph); DECLARE_ID(latch); DECLARE_ID(chordMode);
-    DECLARE_ID(rootKey); DECLARE_ID(scaleType); DECLARE_ID(cycleLength);
+    DECLARE_ID(morph); DECLARE_ID(latch);
     #undef DECLARE_ID
 }
 
@@ -96,9 +94,6 @@ public:
 
 private:
     static juce::AudioProcessorValueTreeState::ParameterLayout createParameterLayout();
-    void updateLfoModulations (int numSamples, double bpm);
-    std::vector<int> generateEuclideanPattern (int steps, int pulses);
-    void scheduleNoteOff (juce::MidiBuffer& midi, int pitch, int delaySamples);
 
     double mSampleRate = 44100.0;
     int mTimeInSamples = 0;
@@ -110,24 +105,8 @@ private:
     
     std::vector<std::pair<int, int>> scheduledNoteOffs;
 
-    double lfoPhaseEntropy = 0.0;
-    double lfoPhaseChaos = 0.0;
-    double lfoPhaseMorph = 0.0;
-    double lfoPhaseLegato = 0.0;
-
-    float modRest = 0.1f;
-    float modLegato = 0.5f;
-    float modEntropy = 0.0f;
-    float modHarmony = 0.0f;
-    float modChaos = 0.0f;
-    float accumulatedPitchOffset = 0.0f;
-
-    std::vector<int> lastChordPitches;
-
     SceneState presets[8];
     bool presetSlotsSaved[8] = { false };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };
-
-#endif // NAVY_ARP_PROCESSOR_H
