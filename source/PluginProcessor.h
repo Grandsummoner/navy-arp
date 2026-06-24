@@ -2,6 +2,7 @@
 
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
+#include <atomic>
 
 namespace IDs 
 {
@@ -71,8 +72,6 @@ public:
     void resetRhythm();
     void triggerDiatonicChordPad (int padIndex);
 
-    void triggerArpStep (float stepProbability, float activeRest, float activeLegato, const std::vector<int>& notesToPlay, juce::MidiBuffer& processedMidi, double bpm);
-
     SceneState sceneA;
     SceneState sceneB;
     bool hasSceneA = false;
@@ -80,7 +79,11 @@ public:
 
     int currentStep = 0;
     int currentBarInCycle = 1;
-    juce::String activeChordExtensionText = "TRIAD";
+    
+    // Thread-safe atomic variables accessed by UI thread
+    std::atomic<bool> isCurrentlyPlayingUI { false };
+    std::atomic<int> activeChordExtensionType { 0 }; // 0 = Triad, 1 = Sus, 2 = 7th/9th
+    
     std::vector<int> activeHeldNotes;
     std::vector<int> latchedNotes;
     bool isFirstNoteOfNewChord = true;

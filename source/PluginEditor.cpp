@@ -106,7 +106,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     diceRhythmButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFFB300));
     diceRhythmButton.onClick = [this] { processor.diceRhythm(); };
 
-    // Toggle-to-Capture / Toggle-to-Clear Scenes
+    // Scenes
     addAndMakeVisible (sceneAButton);
     sceneAButton.setButtonText ("A");
     sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF111111));
@@ -141,7 +141,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         }
     };
 
-    // 8 Preset Slots (Left-Click to Load / Right-Click to Save)
+    // 8 Preset Slots
     for (int i = 0; i < 8; ++i)
     {
         addAndMakeVisible (presetButtons[i]);
@@ -150,8 +150,8 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF444444));
 
         presetButtons[i].onClick = [this, i] {
-            if (chordModeButton.getToggleState()) processor.triggerDiatonicChordPad(i); // Trigger Trance Chord
-            else processor.loadPreset(i); // Recall Preset
+            if (chordModeButton.getToggleState()) processor.triggerDiatonicChordPad(i); 
+            else processor.loadPreset(i); 
         };
 
         presetButtons[i].addMouseListener (this, false);
@@ -210,7 +210,6 @@ PluginEditor::~PluginEditor()
 { 
     stopTimer(); 
     
-    // Clear all lambdas to prevent them from executing on deleted memory
     diceMelodyButton.onClick = nullptr;
     diceRhythmButton.onClick = nullptr;
     sceneAButton.onClick = nullptr;
@@ -220,7 +219,7 @@ PluginEditor::~PluginEditor()
     {
         presetButtons[i].onClick = nullptr;
         presetButtons[i].onStateChange = nullptr;
-        presetButtons[i].removeMouseListener(this); // Safe unregistration
+        presetButtons[i].removeMouseListener(this); 
     }
 }
 
@@ -228,7 +227,6 @@ void PluginEditor::timerCallback()
 {
     float morphValue = morphCrossfader.getValue();
     
-    // Smoothly morph parameters and update underlying variables in real-time
     if (processor.hasSceneA && processor.hasSceneB && morphCrossfader.isMouseButtonDown())
     {
         for (int i = 0; i < 8; ++i)
@@ -245,14 +243,20 @@ void PluginEditor::timerCallback()
         processor.apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost ((processor.sceneA.chaos * (1.0f - morphValue)) + (processor.sceneB.chaos * morphValue));
     }
 
-    // Dynamic Fader Labels updating to show current scale notes based on selected Key/Scale
+    // Dynamic Fader Labels updating to show correct scale notes [CRITICAL FIX - Added offsets for all 10 scales]
     int activeKey = rootKeyBox.getSelectedItemIndex();
     int activeScale = scaleTypeBox.getSelectedItemIndex();
     
-    std::vector<int> offsets = { 0, 2, 4, 5, 7, 9, 11, 12 };
-    if (activeScale == 1)      offsets = { 0, 2, 3, 5, 7, 8, 10, 12 };
-    else if (activeScale == 2) offsets = { 0, 2, 4, 7, 9, 12, 14, 16 };
-    else if (activeScale == 3) offsets = { 0, 2, 3, 5, 7, 9, 10, 12 };
+    std::vector<int> offsets = { 0, 2, 4, 5, 7, 9, 11, 12 }; // Major
+    if (activeScale == 1)      offsets = { 0, 2, 3, 5, 7, 8, 10, 12 }; // Minor
+    else if (activeScale == 2) offsets = { 0, 3, 5, 7, 10, 12, 15, 17 }; // Pentatonic Minor
+    else if (activeScale == 3) offsets = { 0, 2, 4, 7, 9, 12, 14, 16 };  // Pentatonic Major
+    else if (activeScale == 4) offsets = { 0, 2, 3, 5, 7, 9, 10, 12 };  // Dorian
+    else if (activeScale == 5) offsets = { 0, 1, 3, 5, 7, 8, 10, 12 };  // Phrygian
+    else if (activeScale == 6) offsets = { 0, 2, 4, 6, 7, 9, 11, 12 };  // Lydian
+    else if (activeScale == 7) offsets = { 0, 2, 4, 5, 7, 9, 10, 12 };  // Mixolydian
+    else if (activeScale == 8) offsets = { 0, 2, 3, 5, 7, 8, 11, 12 };  // Harmonic Minor
+    else if (activeScale == 9) offsets = { 0, 2, 3, 5, 7, 9, 11, 12 };  // Melodic Minor
 
     juce::String chromaticNotes[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B" };
     juce::Label* faderLabels[] = { &faderLabel1, &faderLabel2, &faderLabel3, &faderLabel4, &faderLabel5, &faderLabel6, &faderLabel7, &faderLabel8 };
@@ -263,7 +267,6 @@ void PluginEditor::timerCallback()
         faderLabels[i]->setText (chromaticNotes[noteIndex], juce::dontSendNotification);
     }
 
-    // Keep Preset glow updated
     for (int i = 0; i < 8; ++i)
     {
         if (processor.isPresetSaved (i))
@@ -339,18 +342,19 @@ void PluginEditor::resized()
     // 4. Center Section: OLED Display, Dropdowns, and 8 Preset Buttons
     auto presetArea = area.removeFromBottom (32);
     
-    // OLED screen gets the remaining middle real estate
     auto oledArea = area.reduced (5, 5);
     
-    // Position dropdowns neatly inside the OLED screen's side areas
+    // Position dropdowns neatly inside the OLED screen's side and center areas [CRITICAL FIX - Added cycleLengthBox positioning]
     rootKeyBox.setBounds (oledArea.removeFromLeft (75).removeFromTop (30).translated (5, 5));
     scaleTypeBox.setBounds (oledArea.removeFromRight (110).removeFromTop (30).translated (-5, 5));
+    cycleLengthBox.setBounds (oledArea.removeFromRight (85).removeFromTop (30).translated (-5, 5));
     
     oledDisplay.setBounds (area.reduced (5, 5));
 
-    // Call toFront() so the dropdowns sit securely on top of the black OLED display background
+    // Call toFront() so dropdowns render safely on top of OLED background [CRITICAL FIX - cycleLengthBox added]
     rootKeyBox.toFront (false);
     scaleTypeBox.toFront (false);
+    cycleLengthBox.toFront (false);
 
     int presetWidth = presetArea.getWidth() / 8;
     for (int i = 0; i < 8; ++i)
