@@ -23,40 +23,40 @@ public:
 
     void paint (juce::Graphics& g) override
     {
-        g.fillAll (juce::Colour (0xFF000000));
-        g.setColour (juce::Colour (0xFF112233));
-        g.drawRect (getLocalBounds().toFloat(), 1.5f);
+        g.fillAll (juce::Colour (0xFF0A0A0C)); // Deep hardware black
+        g.setColour (juce::Colour (0xFF1A2B3C)); // Subtle blue-grey frame border
+        g.drawRect (getLocalBounds().toFloat(), 2.0f);
 
         g.setColour (juce::Colour (0xFF00D2FF));
         g.setFont (juce::Font ("Consolas", 14.0f, juce::Font::bold));
         
-        juce::String headerText = "--- NAVY-ARP OLED ACTIVE ---";
-        g.drawFittedText (headerText, getLocalBounds().removeFromTop (30), juce::Justification::centred, 1);
+        juce::String headerText = "NAVY-ARP GRAPHIC MONITOR";
+        g.drawFittedText (headerText, getLocalBounds().removeFromTop (25), juce::Justification::centred, 1);
 
-        // Dynamic OLED Label (Key, Scale & Extensions)
+        // Real-time OLED Context Information
         juce::String scaleName = processor.apvts.getParameter(IDs::scaleType.getParamID())->getCurrentValueAsText();
         juce::String keyName = processor.apvts.getParameter(IDs::rootKey.getParamID())->getCurrentValueAsText();
         int extType = processor.activeChordExtensionType.load();
-        juce::String extText = (extType == 0) ? "TRIAD" : (extType == 1) ? "SUS" : "7th/9th";
+        juce::String extText = (extType == 0) ? "TRIAD" : (extType == 1) ? "SUS" : "7TH/9TH";
 
         g.setFont (juce::Font ("Consolas", 11.0f, juce::Font::plain));
-        g.setColour (juce::Colour (0xFF888888));
-        g.drawText (keyName + " " + scaleName + " (" + extText + ")", 15, 25, getWidth() - 30, 15, juce::Justification::centred);
+        g.setColour (juce::Colour (0xFF888A90));
+        g.drawText ("KEY: " + keyName + " | SCALE: " + scaleName + " | EXTENSION: " + extText, 
+                    10, 25, getWidth() - 20, 15, juce::Justification::centred);
 
         // Real-time Step VU-meter pulse lines
         auto area = getLocalBounds().reduced (15);
-        area.removeFromTop (30);
+        area.removeFromTop (35); // Space for OLED header text
         int barWidth = area.getWidth() / 8;
-        int spacing = 4;
+        int spacing = 6;
 
         for (int i = 0; i < 8; ++i)
         {
-            // Lock-free safe read using raw pointer dereferencing for backwards compatibility
             float faderProb = *processor.apvts.getRawParameterValue ("fader" + juce::String (i + 1));
-            int barHeight = static_cast<int>(area.getHeight() * faderProb * 0.7f);
+            int barHeight = static_cast<int>(area.getHeight() * faderProb * 0.75f);
             
             juce::Rectangle<int> bar (area.getX() + (i * barWidth) + spacing, 
-                                      area.getBottom() - barHeight - 15, 
+                                      area.getBottom() - barHeight - 5, 
                                       barWidth - (spacing * 2), 
                                       barHeight);
 
@@ -64,16 +64,16 @@ public:
 
             if (i == processor.currentStep && isPlaying)
             {
-                if (i == 0)      g.setColour (juce::Colour (0xFF33FF33)); 
-                else if (i == 4) g.setColour (juce::Colour (0xFFFF3333)); 
-                else             g.setColour (juce::Colour (0xFF00FFFF)); 
-                g.fillRect (bar.expanded(2, 2));
+                if (i == 0)      g.setColour (juce::Colour (0xFF4CFF4C)); // Beat 1: Neon Green
+                else if (i == 4) g.setColour (juce::Colour (0xFFFF4C4C)); // Beat 2: Neon Red
+                else             g.setColour (juce::Colour (0xFF00FFFF)); // Others: Cyan
+                g.fillRect (bar.expanded(1, 1));
             }
             else
             {
-                if (i % 3 == 0)      g.setColour (juce::Colour (0xFF00D2FF)); 
-                else if (i % 4 == 0) g.setColour (juce::Colour (0xFFB080FF)); 
-                else                 g.setColour (juce::Colour (0xFFFFB300)); 
+                if (i % 3 == 0)      g.setColour (juce::Colour (0xFF00BCFF)); 
+                else if (i % 4 == 0) g.setColour (juce::Colour (0xFF9966FF)); 
+                else                 g.setColour (juce::Colour (0xFFFFAA00)); 
                 g.fillRect (bar);
             }
         }

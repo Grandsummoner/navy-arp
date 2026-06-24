@@ -16,7 +16,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         faders[i]->setSliderStyle (juce::Slider::LinearVertical);
         faders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
         faders[i]->setColour (juce::Slider::thumbColourId, juce::Colour (0xFF00D2FF));
-        faders[i]->setColour (juce::Slider::trackColourId, juce::Colour (0xFF112233));
+        faders[i]->setColour (juce::Slider::trackColourId, juce::Colour (0xFF181C24));
         addAndMakeVisible (faders[i]);
 
         faderLabels[i]->setText (scaleNotes[i], juce::dontSendNotification);
@@ -95,13 +95,13 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     // DICE Buttons
     addAndMakeVisible (diceMelodyButton);
-    diceMelodyButton.setButtonText ("DICE M");
+    diceMelodyButton.setButtonText ("DICE MELODY");
     diceMelodyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
     diceMelodyButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFFB300));
     diceMelodyButton.onClick = [this] { processor.diceMelody(); };
 
     addAndMakeVisible (diceRhythmButton);
-    diceRhythmButton.setButtonText ("DICE R");
+    diceRhythmButton.setButtonText ("DICE RHYTHM");
     diceRhythmButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
     diceRhythmButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFFB300));
     diceRhythmButton.onClick = [this] { processor.diceRhythm(); };
@@ -267,10 +267,42 @@ void PluginEditor::timerCallback()
         faderLabels[i]->setText (chromaticNotes[noteIndex], juce::dontSendNotification);
     }
 
+    // Keep Scene Active Button Colors Synced beautifully
+    if (processor.hasSceneA)
+    {
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF00D2FF));
+        sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF000000));
+    }
+    else
+    {
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF18181C));
+        sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF88888A));
+    }
+
+    if (processor.hasSceneB)
+    {
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFB300));
+        sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF000000));
+    }
+    else
+    {
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF18181C));
+        sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF88888A));
+    }
+
+    // Dynamic preset saved status glow
     for (int i = 0; i < 8; ++i)
     {
         if (processor.isPresetSaved (i))
-            presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF003344));
+        {
+            presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A3A4A));
+            presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF00D2FF));
+        }
+        else
+        {
+            presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF141416));
+            presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF66666A));
+        }
     }
 }
 
@@ -311,48 +343,63 @@ void PluginEditor::resized()
 
     // 2. Scene Morph Crossfader
     auto morphArea = area.removeFromBottom (35);
-    sceneAButton.setBounds (morphArea.removeFromLeft (35).reduced (0, 3));
-    sceneBButton.setBounds (morphArea.removeFromRight (35).reduced (0, 3));
-    morphCrossfader.setBounds (morphArea.reduced (10, 5));
+    sceneAButton.setBounds (morphArea.removeFromLeft (45).reduced (0, 3));
+    sceneBButton.setBounds (morphArea.removeFromRight (45).reduced (0, 3));
+    morphCrossfader.setBounds (morphArea.reduced (15, 5));
 
-    area.removeFromBottom (10);
+    area.removeFromBottom (15);
 
-    // 3. Sidebars
-    auto leftSidebar = area.removeFromLeft (95);
-    auto rightSidebar = area.removeFromRight (95);
+    // 3. Sidebars (Increased width to 105 for spaciousness)
+    auto leftSidebar = area.removeFromLeft (105);
+    auto rightSidebar = area.removeFromRight (105);
     
+    // Left Sidebar: Title labels + knobs + stacked buttons [CRITICAL FIX]
     int leftRowHeight = leftSidebar.getHeight() / 4;
-    rhythmMorphKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
-    restKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
-    legatoKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
+    juce::Label* leftTitles[] = { &rhythmMorphTitle, &restTitle, &legatoTitle };
+    juce::Slider* leftKnobs[] = { &rhythmMorphKnob, &restKnob, &legatoKnob };
     
-    auto leftBtnArea = leftSidebar.reduced (5);
-    latchButton.setBounds (leftBtnArea.removeFromLeft (leftBtnArea.getWidth() / 2).reduced (2));
+    for (int i = 0; i < 3; ++i)
+    {
+        auto row = leftSidebar.removeFromTop (leftRowHeight);
+        leftTitles[i]->setBounds (row.removeFromTop (16));
+        leftKnobs[i]->setBounds (row.reduced (4, 2));
+    }
+    
+    auto leftBtnArea = leftSidebar.reduced (5, 2);
+    int leftBtnHeight = leftBtnArea.getHeight() / 2;
+    latchButton.setBounds (leftBtnArea.removeFromTop (leftBtnHeight).reduced (2));
     chordModeButton.setBounds (leftBtnArea.reduced (2));
 
+    // Right Sidebar: Title labels + knobs + stacked buttons [CRITICAL FIX]
     int rightRowHeight = rightSidebar.getHeight() / 4;
-    entropyKnob.setBounds (rightSidebar.removeFromTop (rightRowHeight).reduced (2));
-    harmonyKnob.setBounds (rightSidebar.removeFromTop (rightRowHeight).reduced (2));
-    chaosKnob.setBounds (rightSidebar.removeFromTop (rightRowHeight).reduced (2));
+    juce::Label* rightTitles[] = { &entropyTitle, &harmonyTitle, &chaosTitle };
+    juce::Slider* rightKnobs[] = { &entropyKnob, &harmonyKnob, &chaosKnob };
     
-    auto diceArea = rightSidebar;
-    diceMelodyButton.setBounds (diceArea.removeFromLeft (diceArea.getWidth() / 2).reduced (2, 8));
-    diceRhythmButton.setBounds (diceArea.reduced (2, 8));
+    for (int i = 0; i < 3; ++i)
+    {
+        auto row = rightSidebar.removeFromTop (rightRowHeight);
+        rightTitles[i]->setBounds (row.removeFromTop (16));
+        rightKnobs[i]->setBounds (row.reduced (4, 2));
+    }
+    
+    auto diceArea = rightSidebar.reduced (5, 2);
+    int diceBtnHeight = diceArea.getHeight() / 2;
+    diceMelodyButton.setBounds (diceArea.removeFromTop (diceBtnHeight).reduced (2));
+    diceRhythmButton.setBounds (diceArea.reduced (2));
 
-    // 4. Center Section: OLED Display, Dropdowns, and 8 Preset Buttons
+    // 4. Center Section: Dropdown Bar, OLED Display, and 8 Preset Buttons
     auto presetArea = area.removeFromBottom (32);
     auto oledArea = area.reduced (5, 5);
     
-    // Position dropdowns inside OLED screen
-    rootKeyBox.setBounds (oledArea.removeFromLeft (75).removeFromTop (30).translated (5, 5));
-    scaleTypeBox.setBounds (oledArea.removeFromRight (110).removeFromTop (30).translated (-5, 5));
-    cycleLengthBox.setBounds (oledArea.removeFromRight (85).removeFromTop (30).translated (-5, 5));
+    // Separate Dropdown Bar above OLED Screen to prevent graphic overlap [CRITICAL FIX]
+    auto dropdownBarArea = oledArea.removeFromTop (35);
+    int dropdownWidth = dropdownBarArea.getWidth() / 3;
     
-    oledDisplay.setBounds (area.reduced (5, 5));
-
-    rootKeyBox.toFront (false);
-    scaleTypeBox.toFront (false);
-    cycleLengthBox.toFront (false);
+    rootKeyBox.setBounds (dropdownBarArea.removeFromLeft (dropdownWidth).reduced (6, 2));
+    cycleLengthBox.setBounds (dropdownBarArea.removeFromLeft (dropdownWidth).reduced (6, 2));
+    scaleTypeBox.setBounds (dropdownBarArea.reduced (6, 2));
+    
+    oledDisplay.setBounds (oledArea.reduced (0, 5));
 
     int presetWidth = presetArea.getWidth() / 8;
     for (int i = 0; i < 8; ++i)
