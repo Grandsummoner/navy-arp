@@ -65,7 +65,7 @@ public:
     void clearSceneA() { hasSceneA = false; }
     void clearSceneB() { hasSceneB = false; }
 
-    // Generative triggers (Public declarations)
+    // Generative triggers
     void diceMelody();
     void diceRhythm();
     void resetAccumulator();
@@ -79,11 +79,11 @@ public:
 
     int currentStep = 0;
     int currentBarInCycle = 1;
-    
-    // Thread-safe atomic variables accessed by UI thread
+
+    // Multi-thread safe communication
     std::atomic<bool> isCurrentlyPlayingUI { false };
-    std::atomic<int> activeChordExtensionType { 0 }; // 0 = Triad, 1 = Sus, 2 = 7th/9th
-    
+    std::atomic<int> activeChordExtensionType { 0 }; // 0 = TRIAD, 1 = SUS, 2 = 7th/9th
+
     std::vector<int> activeHeldNotes;
     std::vector<int> latchedNotes;
     bool isFirstNoteOfNewChord = true;

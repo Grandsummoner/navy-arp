@@ -20,7 +20,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         addAndMakeVisible (faders[i]);
 
         faderLabels[i]->setText (scaleNotes[i], juce::dontSendNotification);
-        faderLabels[i]->setFont (juce::FontOptions (14.0f).withStyle ("bold"));
+        faderLabels[i]->setFont (juce::Font (14.0f, juce::Font::bold));
         faderLabels[i]->setJustificationType (juce::Justification::centred);
         faderLabels[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF888888));
         addAndMakeVisible (faderLabels[i]);
@@ -41,7 +41,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         addAndMakeVisible (leftKnobs[i]);
 
         leftTitles[i]->setText (leftNames[i], juce::dontSendNotification);
-        leftTitles[i]->setFont (juce::FontOptions (10.0f).withStyle ("bold"));
+        leftTitles[i]->setFont (juce::Font (10.0f, juce::Font::bold));
         leftTitles[i]->setJustificationType (juce::Justification::centred);
         leftTitles[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF55555c));
         addAndMakeVisible (leftTitles[i]);
@@ -62,7 +62,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         addAndMakeVisible (rightKnobs[i]);
 
         rightTitles[i]->setText (rightNames[i], juce::dontSendNotification);
-        rightTitles[i]->setFont (juce::FontOptions (10.0f).withStyle ("bold"));
+        rightTitles[i]->setFont (juce::Font (10.0f, juce::Font::bold));
         rightTitles[i]->setJustificationType (juce::Justification::centred);
         rightTitles[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF55555c));
         addAndMakeVisible (rightTitles[i]);
@@ -243,7 +243,7 @@ void PluginEditor::timerCallback()
         processor.apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost ((processor.sceneA.chaos * (1.0f - morphValue)) + (processor.sceneB.chaos * morphValue));
     }
 
-    // Dynamic Fader Labels updating to show correct scale notes [CRITICAL FIX - Added offsets for all 10 scales]
+    // Dynamic Fader Labels updating to show current scale notes based on selected Key/Scale
     int activeKey = rootKeyBox.getSelectedItemIndex();
     int activeScale = scaleTypeBox.getSelectedItemIndex();
     
@@ -280,7 +280,7 @@ void PluginEditor::paint (juce::Graphics& g)
     g.setColour (juce::Colour (0xFF232326));
     g.drawRect (getLocalBounds().toFloat(), 3.0f);
 
-    g.setFont (juce::FontOptions (12.0f).withStyle ("bold"));
+    g.setFont (juce::Font (12.0f, juce::Font::bold));
     g.setColour (juce::Colour (0xFF55555c));
     g.drawText ("RHYTHM", 15, 12, 100, 20, juce::Justification::left);
     g.drawText ("GENERATOR", getWidth() - 115, 12, 100, 20, juce::Justification::right);
@@ -341,17 +341,15 @@ void PluginEditor::resized()
 
     // 4. Center Section: OLED Display, Dropdowns, and 8 Preset Buttons
     auto presetArea = area.removeFromBottom (32);
-    
     auto oledArea = area.reduced (5, 5);
     
-    // Position dropdowns neatly inside the OLED screen's side and center areas [CRITICAL FIX - Added cycleLengthBox positioning]
+    // Position dropdowns inside OLED screen
     rootKeyBox.setBounds (oledArea.removeFromLeft (75).removeFromTop (30).translated (5, 5));
     scaleTypeBox.setBounds (oledArea.removeFromRight (110).removeFromTop (30).translated (-5, 5));
     cycleLengthBox.setBounds (oledArea.removeFromRight (85).removeFromTop (30).translated (-5, 5));
     
     oledDisplay.setBounds (area.reduced (5, 5));
 
-    // Call toFront() so dropdowns render safely on top of OLED background [CRITICAL FIX - cycleLengthBox added]
     rootKeyBox.toFront (false);
     scaleTypeBox.toFront (false);
     cycleLengthBox.toFront (false);

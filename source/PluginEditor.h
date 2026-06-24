@@ -28,18 +28,18 @@ public:
         g.drawRect (getLocalBounds().toFloat(), 1.5f);
 
         g.setColour (juce::Colour (0xFF00D2FF));
-        g.setFont (juce::FontOptions ("Consolas", 14.0f, juce::Font::bold));
+        g.setFont (juce::Font ("Consolas", 14.0f, juce::Font::bold));
         
         juce::String headerText = "--- NAVY-ARP OLED ACTIVE ---";
         g.drawFittedText (headerText, getLocalBounds().removeFromTop (30), juce::Justification::centred, 1);
 
-        // Real-time OLED Context Information (Scale name, Key name, Chord type) [CRITICAL FIX]
+        // Dynamic OLED Label (Key, Scale & Extensions)
         juce::String scaleName = processor.apvts.getParameter(IDs::scaleType.getParamID())->getCurrentValueAsText();
         juce::String keyName = processor.apvts.getParameter(IDs::rootKey.getParamID())->getCurrentValueAsText();
         int extType = processor.activeChordExtensionType.load();
         juce::String extText = (extType == 0) ? "TRIAD" : (extType == 1) ? "SUS" : "7th/9th";
 
-        g.setFont (juce::FontOptions ("Consolas", 11.0f, juce::Font::plain));
+        g.setFont (juce::Font ("Consolas", 11.0f, juce::Font::plain));
         g.setColour (juce::Colour (0xFF888888));
         g.drawText (keyName + " " + scaleName + " (" + extText + ")", 15, 25, getWidth() - 30, 15, juce::Justification::centred);
 
@@ -51,8 +51,8 @@ public:
 
         for (int i = 0; i < 8; ++i)
         {
-            // Lock-free safe load from public APVTS [CRITICAL FIX]
-            float faderProb = processor.apvts.getRawParameterValue ("fader" + juce::String (i + 1))->load();
+            // Lock-free safe read using raw pointer dereferencing for backwards compatibility
+            float faderProb = *processor.apvts.getRawParameterValue ("fader" + juce::String (i + 1));
             int barHeight = static_cast<int>(area.getHeight() * faderProb * 0.7f);
             
             juce::Rectangle<int> bar (area.getX() + (i * barWidth) + spacing, 
@@ -163,7 +163,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> cycleLengthAttachment;
 
-    JURE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };
 
 #endif // NAVY_ARP_EDITOR_H

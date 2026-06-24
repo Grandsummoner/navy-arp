@@ -110,7 +110,6 @@ void PluginProcessor::updateLfoModulations (int numSamples, double bpm)
     modHarmony = *apvts.getRawParameterValue (IDs::harmony.getParamID());
     modChaos = *apvts.getRawParameterValue (IDs::chaos.getParamID());
 
-    // Atomic update of active extension type to safely pass to the GUI thread
     if (modHarmony < 0.34f) activeChordExtensionType.store(0);
     else if (modHarmony >= 0.34f && modHarmony < 0.67f) activeChordExtensionType.store(1);
     else activeChordExtensionType.store(2);
@@ -136,6 +135,8 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     double bpm = 120.0;
     mSongPositionPPQ = 0.0;
 
+    // Cross-compilation helper for JUCE 6 / JUCE 7 playhead compatibility
+#if JUCE_MAJOR_VERSION >= 7
     if (auto* playhead = getPlayHead())
     {
         if (auto pos = playhead->getPosition())
@@ -147,6 +148,18 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             if (ppqOpt.hasValue()) mSongPositionPPQ = *ppqOpt;
         }
     }
+#else
+    if (auto* playhead = getPlayHead())
+    {
+        juce::AudioPlayHead::CurrentPositionInfo info;
+        if (playhead->getCurrentPositionInfo (info))
+        {
+            isPlaying = info.isPlaying;
+            bpm = info.bpm;
+            mSongPositionPPQ = info.ppqPosition;
+        }
+    }
+#endif
 
     int numSamples = buffer.getNumSamples();
     updateLfoModulations (numSamples, bpm);
@@ -209,7 +222,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
     const auto& notesToPlay = isLatchActive ? latchedNotes : activeHeldNotes;
     
-    // Update thread-safe playing state for visualizers
     isCurrentlyPlayingUI.store (!notesToPlay.empty());
 
     // 3. Dual-Clock Step Generation
@@ -290,7 +302,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                 mLastNotePlayed = targetPitch;
                 mNoteOffTime = durationSamples;
                 
-                // Add note-off command to the queue to turn off the note after Legato time [CRITICAL FIX]
                 scheduleNoteOff (processedMidi, targetPitch, durationSamples);
             }
         }
@@ -299,7 +310,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
     { 
         if (mLastStep != -1)
         {
-            // Turn off any sounding notes instantly when physical keys are released [CRITICAL FIX]
             if (mLastNotePlayed != -1)
             {
                 processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0);
@@ -318,7 +328,6 @@ void PluginProcessor::triggerDiatonicChordPad (int padIndex)
     int rootIdx = juce::jlimit (0, 11, static_cast<int> (*apvts.getRawParameterValue (IDs::rootKey.getParamID())));
     int scaleIdx = juce::jlimit (0, 9, static_cast<int> (*apvts.getRawParameterValue (IDs::scaleType.getParamID())));
 
-    // Retrieve perfect 7-note diatonic configurations for chord building
     std::vector<int> scaleOffsets;
     switch (scaleIdx)
     {
@@ -347,7 +356,6 @@ void PluginProcessor::triggerDiatonicChordPad (int padIndex)
     float harmonyKnobVal = *apvts.getRawParameterValue (IDs::harmony.getParamID());
     std::vector<int> newChord;
 
-    // Voicings bound directly to the HARMONY knob settings [CRITICAL FIX]
     if (harmonyKnobVal >= 0.34f && harmonyKnobVal < 0.67f)
     {
         t = getScalePitch (padIndex + 3); // Sus4 chord
