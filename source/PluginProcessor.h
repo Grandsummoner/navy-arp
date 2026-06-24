@@ -12,8 +12,7 @@ namespace IDs
     DECLARE_ID(fader5); DECLARE_ID(fader6); DECLARE_ID(fader7); DECLARE_ID(fader8);
     DECLARE_ID(rhythmMorph); DECLARE_ID(rest); DECLARE_ID(legato);
     DECLARE_ID(entropy); DECLARE_ID(harmony); DECLARE_ID(chaos);
-    DECLARE_ID(morph); DECLARE_ID(latch); DECLARE_ID(chordMode);
-    DECLARE_ID(rootKey); DECLARE_ID(scaleType); DECLARE_ID(cycleLength);
+    DECLARE_ID(morph); DECLARE_ID(latch);
     #undef DECLARE_ID
 }
 
@@ -71,10 +70,11 @@ public:
     void diceRhythm();
     void resetAccumulator();
     void resetRhythm();
-    void triggerDiatonicChordPad (int padIndex);
 
-    // Simplified trigger function (reads LFO states directly from class members)
     void triggerArpStep (float stepProbability, const std::vector<int>& notesToPlay, juce::MidiBuffer& processedMidi, double bpm);
+
+    // 100% Null-Safe Parameter Reading Helper (Prevents Segfault 139)
+    float getParameterValue (const juce::String& paramId) const;
 
     SceneState sceneA;
     SceneState sceneB;
@@ -82,8 +82,6 @@ public:
     bool hasSceneB = false;
 
     int currentStep = 0;
-    int currentBarInCycle = 1;
-    juce::String activeChordExtensionText = "TRIAD";
     
     // Thread-safe lock-free visualizer state flag
     std::atomic<bool> isCurrentlyPlayingUI { false };
@@ -122,8 +120,6 @@ private:
     float modHarmony = 0.0f;
     float modChaos = 0.0f;
     float accumulatedPitchOffset = 0.0f;
-
-    std::vector<int> lastChordPitches;
 
     SceneState presets[8];
     bool presetSlotsSaved[8] = { false };
