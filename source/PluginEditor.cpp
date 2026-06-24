@@ -84,6 +84,15 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     latchButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xFF00D2FF));
     latchButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
 
+    // Chords toggle
+    addAndMakeVisible (chordModeButton);
+    chordModeButton.setButtonText ("CHORDS");
+    chordModeButton.setClickingTogglesState (true);
+    chordModeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF141416));
+    chordModeButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF666666));
+    chordModeButton.setColour (juce::TextButton::buttonOnColourId, juce::Colour (0xFFFFB300));
+    chordModeButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
+
     // DICE Buttons
     addAndMakeVisible (diceMelodyButton);
     diceMelodyButton.setButtonText ("DICE M");
@@ -141,7 +150,8 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF444444));
 
         presetButtons[i].onClick = [this, i] {
-            processor.loadPreset(i);
+            if (chordModeButton.getToggleState()) processor.triggerDiatonicChordPad(i); // Trigger Trance Chord
+            else processor.loadPreset(i); // Recall Preset
         };
 
         presetButtons[i].addMouseListener (this, false);
@@ -159,6 +169,12 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     scaleTypeBox.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xFF111111));
     scaleTypeBox.setColour (juce::ComboBox::outlineColourId, juce::Colour (0xFF222222));
     scaleTypeBox.setColour (juce::ComboBox::textColourId, juce::Colour (0xFFFFB300));
+
+    addAndMakeVisible (cycleLengthBox);
+    cycleLengthBox.addItemList (juce::StringArray { "1 Bar", "2 Bars", "4 Bars", "8 Bars" }, 1);
+    cycleLengthBox.setColour (juce::ComboBox::backgroundColourId, juce::Colour (0xFF111111));
+    cycleLengthBox.setColour (juce::ComboBox::outlineColourId, juce::Colour (0xFF222222));
+    cycleLengthBox.setColour (juce::ComboBox::textColourId, juce::Colour (0xFFFFB300));
 
     // Parameter Bindings
     fader1Attachment = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::fader1.getParamID(), fader1);
@@ -180,19 +196,21 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     morphAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::morph.getParamID(), morphCrossfader);
     latchAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::latch.getParamID(), latchButton);
+    chordModeAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::chordMode.getParamID(), chordModeButton);
+
+    rootKeyAttachment     = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processor.apvts, IDs::rootKey.getParamID(), rootKeyBox);
+    scaleTypeAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processor.apvts, IDs::scaleType.getParamID(), scaleTypeBox);
+    cycleLengthAttachment = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processor.apvts, IDs::cycleLength.getParamID(), cycleLengthBox);
 
     setSize (750, 480);
     startTimerHz (30);
 }
 
-// ==============================================================================
-// Safely clear all callbacks and listeners before the Editor is destroyed
-// ==============================================================================
 PluginEditor::~PluginEditor() 
 { 
     stopTimer(); 
     
-    // Clear all lambdas to prevent them from executing on deleted memory (resolves Segfault 139)
+    // Clear all lambdas to prevent them from executing on deleted memory
     diceMelodyButton.onClick = nullptr;
     diceRhythmButton.onClick = nullptr;
     sceneAButton.onClick = nullptr;
@@ -227,7 +245,25 @@ void PluginEditor::timerCallback()
         processor.apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost ((processor.sceneA.chaos * (1.0f - morphValue)) + (processor.sceneB.chaos * morphValue));
     }
 
-    // Keep the Preset glow updated
+    // Dynamic Fader Labels updating to show current scale notes based on selected Key/Scale
+    int activeKey = rootKeyBox.getSelectedItemIndex();
+    int activeScale = scaleTypeBox.getSelectedItemIndex();
+    
+    std::vector<int> offsets = { 0, 2, 4, 5, 7, 9, 11, 12 };
+    if (activeScale == 1)      offsets = { 0, 2, 3, 5, 7, 8, 10, 12 };
+    else if (activeScale == 2) offsets = { 0, 2, 4, 7, 9, 12, 14, 16 };
+    else if (activeScale == 3) offsets = { 0, 2, 3, 5, 7, 9, 10, 12 };
+
+    juce::String chromaticNotes[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B" };
+    juce::Label* faderLabels[] = { &faderLabel1, &faderLabel2, &faderLabel3, &faderLabel4, &faderLabel5, &faderLabel6, &faderLabel7, &faderLabel8 };
+
+    for (int i = 0; i < 8; ++i)
+    {
+        int noteIndex = (activeKey + offsets[i]) % 12;
+        faderLabels[i]->setText (chromaticNotes[noteIndex], juce::dontSendNotification);
+    }
+
+    // Keep Preset glow updated
     for (int i = 0; i < 8; ++i)
     {
         if (processor.isPresetSaved (i))
@@ -286,7 +322,10 @@ void PluginEditor::resized()
     rhythmMorphKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
     restKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
     legatoKnob.setBounds (leftSidebar.removeFromTop (leftRowHeight).reduced (2));
-    latchButton.setBounds (leftSidebar.reduced (10, 8));
+    
+    auto leftBtnArea = leftSidebar.reduced (5);
+    latchButton.setBounds (leftBtnArea.removeFromLeft (leftBtnArea.getWidth() / 2).reduced (2));
+    chordModeButton.setBounds (leftBtnArea.reduced (2));
 
     int rightRowHeight = rightSidebar.getHeight() / 4;
     entropyKnob.setBounds (rightSidebar.removeFromTop (rightRowHeight).reduced (2));
@@ -297,9 +336,21 @@ void PluginEditor::resized()
     diceMelodyButton.setBounds (diceArea.removeFromLeft (diceArea.getWidth() / 2).reduced (2, 8));
     diceRhythmButton.setBounds (diceArea.reduced (2, 8));
 
-    // 4. Center Section: OLED Display & 8 Preset Buttons
+    // 4. Center Section: OLED Display, Dropdowns, and 8 Preset Buttons
     auto presetArea = area.removeFromBottom (32);
+    
+    // OLED screen gets the remaining middle real estate
+    auto oledArea = area.reduced (5, 5);
+    
+    // Position dropdowns neatly inside the OLED screen's side areas
+    rootKeyBox.setBounds (oledArea.removeFromLeft (75).removeFromTop (30).translated (5, 5));
+    scaleTypeBox.setBounds (oledArea.removeFromRight (110).removeFromTop (30).translated (-5, 5));
+    
     oledDisplay.setBounds (area.reduced (5, 5));
+
+    // Call toFront() so the dropdowns sit securely on top of the black OLED display background
+    rootKeyBox.toFront (false);
+    scaleTypeBox.toFront (false);
 
     int presetWidth = presetArea.getWidth() / 8;
     for (int i = 0; i < 8; ++i)
