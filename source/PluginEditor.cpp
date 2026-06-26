@@ -94,7 +94,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     chordModeButton.setButtonText ("CHORDS");
     chordModeButton.setClickingTogglesState (true);
 
-    // DICE Buttons with LookAndFeel Vector Drawings [NEW]
+    // DICE Buttons with LookAndFeel Vector Drawings
     addAndMakeVisible (diceMelodyButton);
     diceMelodyButton.setComponentID ("dice_melody");
     diceMelodyButton.setButtonText ("MELODY");
@@ -879,7 +879,7 @@ void PluginEditor::paint (juce::Graphics& g)
     g.drawRect (getLocalBounds().toFloat(), 3.0f);
     g.drawHorizontalLine (getHeight() - static_cast<int>(getHeight() * 0.22f), 15.0f, getWidth() - 15.0f);
 
-    g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle (juce::Font::bold))); // Corrected FontOptions syntax [NEW]
+    g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); // Corrected FontOptions syntax [NEW]
     g.setColour (t.textDim.withAlpha (0.7f));
     g.drawText ("RHYTHM", 15, 12, 100, 20, juce::Justification::left);
     g.drawText ("GENERATOR", getWidth() - 115, 12, 100, 20, juce::Justification::right);
