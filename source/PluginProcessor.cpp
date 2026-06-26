@@ -21,6 +21,10 @@ int PluginProcessor::getCurrentProgram() { return 0; }
 void PluginProcessor::setCurrentProgram (int index) { juce::ignoreUnused (index); }
 const juce::String PluginProcessor::getProgramName (int index) { juce::ignoreUnused (index); return {}; }
 void PluginProcessor::changeProgramName (int index, const juce::String& newName) { juce::ignoreUnused (index, newName); }
+juce::AudioProcessorEditor* PluginProcessor::createEditor()
+{
+    return new PluginEditor (*this);
+}
 
 void PluginProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
