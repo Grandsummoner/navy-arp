@@ -15,7 +15,7 @@ namespace IDs
     DECLARE_ID(rootKey); DECLARE_ID(scaleType); DECLARE_ID(cycleLength);
     DECLARE_ID(rate); DECLARE_ID(octaves); 
 
-    // Dynamic Panel Theme selector parameter [1]
+    // Dynamic Panel Theme selector parameter
     DECLARE_ID(panelTheme);
 
     // LFO Parameters
@@ -75,7 +75,7 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Inline forwards delegating to the private consolidated helpers [5]
+    // Inline forwards delegating to the private consolidated helpers
     void saveSceneA (int slotIndex) { saveScene (slotIndex, 0); }
     void loadSceneA (int slotIndex) { loadScene (slotIndex, 0); }
     void saveSceneB (int slotIndex) { saveScene (slotIndex, 1); }
@@ -96,11 +96,8 @@ public:
     // Generative triggers
     void diceMelody();
     void diceRhythm();
-    
-    // Explicit background dice randomizers (No secret focus variables) [NEW]
     void diceActiveSceneA(); 
     void diceActiveSceneB(); 
-
     void resetAccumulator();
     void resetRhythm();
     void triggerDiatonicChordPad (int padIndex);
@@ -110,14 +107,15 @@ public:
     bool hasSceneA = false;
     bool hasSceneB = false;
 
-    // 4x4 Octatrack Scene Memory [5]
-    SceneState sceneAPresets[4];
-    SceneState sceneBPresets[4];
-    bool sceneASlotsSaved[4] = { false };
-    bool sceneBSlotsSaved[4] = { false };
+    // Symmetrical 3-Slot Scene Memory
+    SceneState sceneAPresets[3];
+    SceneState sceneBPresets[3];
+    bool sceneASlotsSaved[3] = { false };
+    bool sceneBSlotsSaved[3] = { false };
     
     std::atomic<int> activeSceneAIndex { 0 }; 
     std::atomic<int> activeSceneBIndex { 0 }; 
+    std::atomic<int> activePresetIndex { 0 }; // Keeps track of currently selected preset slot
 
     int currentStep = 0;
     int currentBarInCycle = 1;
@@ -147,7 +145,7 @@ private:
     std::vector<int> generateEuclideanPattern (int steps, int pulses);
     void scheduleNoteOff (juce::MidiBuffer& midi, int pitch, int delaySamples);
 
-    // Private consolidated scene management helpers [5]
+    // Private consolidated scene management helpers
     void saveScene (int slotIndex, int side);
     void loadScene (int slotIndex, int side);
 

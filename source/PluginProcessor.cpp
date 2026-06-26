@@ -6,7 +6,7 @@ PluginProcessor::PluginProcessor()
       apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 {
     sceneA = SceneState(); sceneB = SceneState(); lastChordPitches = { 60, 64, 67 }; 
-    for (int i = 0; i < 4; ++i) { sceneAPresets[i] = SceneState(); sceneBPresets[i] = SceneState(); }
+    for (int i = 0; i < 3; ++i) { sceneAPresets[i] = SceneState(); sceneBPresets[i] = SceneState(); }
 }
 
 PluginProcessor::~PluginProcessor() {}
@@ -53,12 +53,12 @@ void PluginProcessor::updateLfoModulations (int numSamples, double bpm)
     int cycleBars = (cycleIndex == 0) ? 1 : (cycleIndex == 1) ? 2 : (cycleIndex == 2) ? 4 : 8;
     currentBarInCycle = (static_cast<int>(std::floor(mSongPositionPPQ / 4.0)) % cycleBars) + 1;
 
-    // Real-Time Crossfader Morphing Interpolation [NEW]
+    // Real-Time Crossfader Morphing Interpolation
     float morphVal = *apvts.getRawParameterValue (IDs::morph.getParamID());
     int activeA = activeSceneAIndex.load(), activeB = activeSceneBIndex.load();
     auto morphValue = [&](float valA, float valB) -> float { return (valA * (1.0f - morphVal)) + (valB * morphVal); };
 
-    // Symmetrically interpolate base parameters [NEW]
+    // Symmetrically interpolate base parameters
     float baseMorph   = morphValue (sceneAPresets[activeA].rhythmMorph, sceneBPresets[activeB].rhythmMorph);
     float baseRest    = morphValue (sceneAPresets[activeA].rest,        sceneBPresets[activeB].rest);
     float baseLegato  = morphValue (sceneAPresets[activeA].legato,      sceneBPresets[activeB].legato);
@@ -151,7 +151,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         double stepLengthPPQ = (activeRateIdx == 0) ? 1.0 : (activeRateIdx == 1) ? 0.5 : (activeRateIdx == 2) ? 0.25 : 0.125;
         double stepSamples = samplesPerBeat * stepLengthPPQ;
 
-        // Built-In performance MPC Swing clock calculation [NEW]
+        // Built-In performance MPC Swing clock calculation
         double swingOffset = 0.08 * activeMorph * stepLengthPPQ; // up to 33% swing offset delay
         double triggerThreshold = stepLengthPPQ;
         if (currentStep % 2 == 1) {
@@ -172,7 +172,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         }
 
         if (stepTriggered) {
-            // Generative Playhead Directions inside Entropy [NEW]
+            // Generative Playhead Directions inside Entropy
             int playDirection = 0; // 0 = forward, 1 = ping-pong, 2 = drunkard, 3 = reverse, 4 = step-skip
             if (activeEntropy >= -0.1f && activeEntropy <= 0.1f) playDirection = 0;
             else if (activeEntropy > 0.1f && activeEntropy <= 0.5f) playDirection = 1;
@@ -220,7 +220,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                 int rawPitch = notesToPlay[currentStep % notesToPlay.size()];
                 int octave = (rawPitch / 12) * 12;
 
-                // Symmetrical octave climbing range (-2 to +3) [NEW]
+                // Symmetrical octave climbing range (-2 to +3)
                 int rangeShift = activeOctavesVal; 
                 int octaveShiftCount = 0;
                 if (rangeShift > 0) octaveShiftCount = (currentStep / 2) % (rangeShift + 1); 
@@ -270,8 +270,61 @@ void PluginProcessor::triggerDiatonicChordPad (int padIndex)
     latchedNotes = newChord; apvts.getParameter(IDs::latch.getParamID())->setValueNotifyingHost(1.0f); 
 }
 
-void PluginProcessor::savePreset (int slotIndex) { if (slotIndex >= 0 && slotIndex < 8) { for (int i = 0; i < 8; ++i) presets[slotIndex].faders[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1))); presets[slotIndex].rhythmMorph = *apvts.getRawParameterValue (IDs::rhythmMorph.getParamID()); presets[slotIndex].rest = *apvts.getRawParameterValue (IDs::rest.getParamID()); presets[slotIndex].legato = *apvts.getRawParameterValue (IDs::legato.getParamID()); presets[slotIndex].entropy = *apvts.getRawParameterValue (IDs::entropy.getParamID()); presets[slotIndex].harmony = *apvts.getRawParameterValue (IDs::harmony.getParamID()); presets[slotIndex].chaos = *apvts.getRawParameterValue (IDs::chaos.getParamID()); presetSlotsSaved[slotIndex] = true; } }
-void PluginProcessor::loadPreset (int slotIndex) { if (slotIndex >= 0 && slotIndex < 8 && presetSlotsSaved[slotIndex]) { apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost (presets[slotIndex].rhythmMorph); apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost (presets[slotIndex].rest); apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost (presets[slotIndex].legato); apvts.getParameter (IDs::entropy.getParamID())->setValueNotifyingHost (presets[slotIndex].entropy); apvts.getParameter (IDs::harmony.getParamID())->setValueNotifyingHost (presets[slotIndex].harmony); apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost (presets[slotIndex].chaos); for (int i = 0; i < 8; ++i) apvts.getParameter (juce::String ("fader" + juce::String (i + 1)))->setValueNotifyingHost (presets[slotIndex].faders[i]); } }
+void PluginProcessor::savePreset (int slotIndex) 
+{ 
+    if (slotIndex >= 0 && slotIndex < 8) 
+    { 
+        for (int i = 0; i < 8; ++i) 
+            presets[slotIndex].faders[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1))); 
+        presets[slotIndex].rhythmMorph = *apvts.getRawParameterValue (IDs::rhythmMorph.getParamID()); 
+        presets[slotIndex].rest = *apvts.getRawParameterValue (IDs::rest.getParamID()); 
+        presets[slotIndex].legato = *apvts.getRawParameterValue (IDs::legato.getParamID()); 
+        presets[slotIndex].entropy = *apvts.getRawParameterValue (IDs::entropy.getParamID()); 
+        presets[slotIndex].harmony = *apvts.getRawParameterValue (IDs::harmony.getParamID()); 
+        presets[slotIndex].chaos = *apvts.getRawParameterValue (IDs::chaos.getParamID()); 
+        presets[slotIndex].rate = *apvts.getRawParameterValue (IDs::rate.getParamID());
+        presets[slotIndex].octaves = *apvts.getRawParameterValue (IDs::octaves.getParamID());
+        
+        juce::ParameterID rates[] = { IDs::rhythmMorphLfoRate, IDs::restLfoRate, IDs::legatoLfoRate, IDs::rateLfoRate, IDs::entropyLfoRate, IDs::harmonyLfoRate, IDs::chaosLfoRate, IDs::octavesLfoRate };
+        juce::ParameterID depths[] = { IDs::rhythmMorphLfoDepth, IDs::restLfoDepth, IDs::legatoLfoDepth, IDs::rateLfoDepth, IDs::entropyLfoDepth, IDs::harmonyLfoDepth, IDs::chaosLfoDepth, IDs::octavesLfoDepth };
+        for (int i = 0; i < 8; ++i) { 
+            presets[slotIndex].lfoRates[i] = static_cast<int> (*apvts.getRawParameterValue (rates[i].getParamID())); 
+            presets[slotIndex].lfoDepths[i] = *apvts.getRawParameterValue (depths[i].getParamID()); 
+        }
+        
+        presetSlotsSaved[slotIndex] = true; 
+        activePresetIndex.store (slotIndex); // Update active pointer
+    } 
+}
+
+void PluginProcessor::loadPreset (int slotIndex) 
+{ 
+    if (slotIndex >= 0 && slotIndex < 8 && presetSlotsSaved[slotIndex]) 
+    { 
+        apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost (presets[slotIndex].rhythmMorph); 
+        apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost (presets[slotIndex].rest); 
+        apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost (presets[slotIndex].legato); 
+        
+        apvts.getParameter (IDs::entropy.getParamID())->setValueNotifyingHost ((presets[slotIndex].entropy + 1.0f) * 0.5f); 
+        apvts.getParameter (IDs::harmony.getParamID())->setValueNotifyingHost (presets[slotIndex].harmony); 
+        apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost (presets[slotIndex].chaos); 
+        apvts.getParameter (IDs::rate.getParamID())->setValueNotifyingHost (presets[slotIndex].rate / 3.0f);
+        apvts.getParameter (IDs::octaves.getParamID())->setValueNotifyingHost ((presets[slotIndex].octaves + 2.0f) / 5.0f);
+
+        juce::ParameterID rates[] = { IDs::rhythmMorphLfoRate, IDs::restLfoRate, IDs::legatoLfoRate, IDs::rateLfoRate, IDs::entropyLfoRate, IDs::harmonyLfoRate, IDs::chaosLfoRate, IDs::octavesLfoRate };
+        juce::ParameterID depths[] = { IDs::rhythmMorphLfoDepth, IDs::restLfoDepth, IDs::legatoLfoDepth, IDs::rateLfoDepth, IDs::entropyLfoDepth, IDs::harmonyLfoDepth, IDs::chaosLfoDepth, IDs::octavesLfoDepth };
+        for (int i = 0; i < 8; ++i) { 
+            apvts.getParameter (rates[i].getParamID())->setValueNotifyingHost (static_cast<float>(presets[slotIndex].lfoRates[i]) / 4.0f); 
+            apvts.getParameter (depths[i].getParamID())->setValueNotifyingHost (presets[slotIndex].lfoDepths[i]); 
+        }
+
+        for (int i = 0; i < 8; ++i) 
+            apvts.getParameter (juce::String ("fader" + juce::String (i + 1)))->setValueNotifyingHost (presets[slotIndex].faders[i]); 
+            
+        activePresetIndex.store (slotIndex); // Update active pointer
+    } 
+}
+
 void PluginProcessor::captureSceneA() { for (int i = 0; i < 8; ++i) sceneA.faders[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1))); sceneA.rhythmMorph = *apvts.getRawParameterValue (IDs::rhythmMorph.getParamID()); sceneA.rest = *apvts.getRawParameterValue (IDs::rest.getParamID()); sceneA.legato = *apvts.getRawParameterValue (IDs::legato.getParamID()); sceneA.entropy = *apvts.getRawParameterValue (IDs::entropy.getParamID()); sceneA.harmony = *apvts.getRawParameterValue (IDs::harmony.getParamID()); sceneA.chaos = *apvts.getRawParameterValue (IDs::chaos.getParamID()); hasSceneA = true; }
 void PluginProcessor::captureSceneB() { for (int i = 0; i < 8; ++i) sceneB.faders[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1))); sceneB.rhythmMorph = *apvts.getRawParameterValue (IDs::rhythmMorph.getParamID()); sceneB.rest = *apvts.getRawParameterValue (IDs::rest.getParamID()); sceneB.legato = *apvts.getRawParameterValue (IDs::legato.getParamID()); sceneB.entropy = *apvts.getRawParameterValue (IDs::entropy.getParamID()); sceneB.harmony = *apvts.getRawParameterValue (IDs::harmony.getParamID()); sceneB.chaos = *apvts.getRawParameterValue (IDs::chaos.getParamID()); hasSceneB = true; }
 void PluginProcessor::resetAccumulator() { accumulatedPitchOffset = 0.0f; }
@@ -339,6 +392,7 @@ void PluginProcessor::diceActiveSceneB()
 }
 
 void PluginProcessor::saveScene (int slotIndex, int side) {
+    if (slotIndex < 0 || slotIndex >= 3) return; // Bounds guard for 3 slots [NEW]
     SceneState& s = (side == 0) ? sceneAPresets[slotIndex] : sceneBPresets[slotIndex];
     for (int i = 0; i < 8; ++i) s.faders[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1)));
     s.rhythmMorph = *apvts.getRawParameterValue (IDs::rhythmMorph.getParamID()); s.rest = *apvts.getRawParameterValue (IDs::rest.getParamID()); s.legato = *apvts.getRawParameterValue (IDs::legato.getParamID());
@@ -351,6 +405,7 @@ void PluginProcessor::saveScene (int slotIndex, int side) {
 }
 
 void PluginProcessor::loadScene (int slotIndex, int side) {
+    if (slotIndex < 0 || slotIndex >= 3) return; // Bounds guard for 3 slots [NEW]
     if ((side == 0 && !sceneASlotsSaved[slotIndex]) || (side == 1 && !sceneBSlotsSaved[slotIndex])) return;
     SceneState& s = (side == 0) ? sceneAPresets[slotIndex] : sceneBPresets[slotIndex];
     apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost (s.rhythmMorph); apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost (s.rest); apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost (s.legato);
@@ -374,7 +429,7 @@ void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
     auto* presetsNodeA = xml->createNewChildElement ("SCENE_A_PRESETS");
     auto* presetsNodeB = xml->createNewChildElement ("SCENE_B_PRESETS");
 
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < 3; ++i) // Symmetrical serialization loops adjusted to 3 slots [NEW]
     {
         auto* childA = presetsNodeA->createNewChildElement ("SLOT_" + juce::String (i));
         childA->setAttribute ("saved", sceneASlotsSaved[i]);
@@ -412,6 +467,30 @@ void PluginProcessor::getStateInformation (juce::MemoryBlock& destData)
             }
         }
     }
+
+    // Preserve static global preset banks (8 presets)
+    auto* banksNode = xml->createNewChildElement ("GLOBAL_BANKS");
+    for (int i = 0; i < 8; ++i)
+    {
+        auto* childBank = banksNode->createNewChildElement ("BANK_" + juce::String (i));
+        childBank->setAttribute ("saved", presetSlotsSaved[i]);
+        if (presetSlotsSaved[i]) {
+            childBank->setAttribute ("morph", presets[i].rhythmMorph);
+            childBank->setAttribute ("rest", presets[i].rest);
+            childBank->setAttribute ("legato", presets[i].legato);
+            childBank->setAttribute ("rate", presets[i].rate);
+            childBank->setAttribute ("entropy", presets[i].entropy);
+            childBank->setAttribute ("harmony", presets[i].harmony);
+            childBank->setAttribute ("chaos", presets[i].chaos);
+            childBank->setAttribute ("octaves", presets[i].octaves);
+            for (int f = 0; f < 8; ++f) childBank->setAttribute ("fader_" + juce::String (f), presets[i].faders[f]);
+            for (int l = 0; l < 8; ++l) {
+                childBank->setAttribute ("lfo_r_" + juce::String (l), presets[i].lfoRates[l]);
+                childBank->setAttribute ("lfo_d_" + juce::String (l), presets[i].lfoDepths[l]);
+            }
+        }
+    }
+
     copyXmlToBinary (*xml, destData);
 }
 
@@ -423,7 +502,7 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
         apvts.replaceState (juce::ValueTree::fromXml (*xmlState));
         if (auto* presetsNodeA = xmlState->getChildByName ("SCENE_A_PRESETS"))
         {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < 3; ++i) // Symmetrical loading loops adjusted to 3 slots
             {
                 if (auto* childA = presetsNodeA->getChildByName ("SLOT_" + juce::String (i))) {
                     sceneASlotsSaved[i] = childA->getBoolAttribute ("saved");
@@ -447,7 +526,7 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
         }
         if (auto* presetsNodeB = xmlState->getChildByName ("SCENE_B_PRESETS"))
         {
-            for (int i = 0; i < 4; ++i)
+            for (int i = 0; i < 3; ++i) // Symmetrical loading loops adjusted to 3 slots
             {
                 if (auto* childB = presetsNodeB->getChildByName ("SLOT_" + juce::String (i))) {
                     sceneBSlotsSaved[i] = childB->getBoolAttribute ("saved");
@@ -464,6 +543,30 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
                         for (int l = 0; l < 8; ++l) {
                             sceneBPresets[i].lfoRates[l] = childB->getIntAttribute ("lfo_r_" + juce::String (l));
                             sceneBPresets[i].lfoDepths[l] = childB->getDoubleAttribute ("lfo_d_" + juce::String (l));
+                        }
+                    }
+                }
+            }
+        }
+        if (auto* banksNode = xmlState->getChildByName ("GLOBAL_BANKS"))
+        {
+            for (int i = 0; i < 8; ++i)
+            {
+                if (auto* childBank = banksNode->getChildByName ("BANK_" + juce::String (i))) {
+                    presetSlotsSaved[i] = childBank->getBoolAttribute ("saved");
+                    if (presetSlotsSaved[i]) {
+                        presets[i].rhythmMorph = childBank->getDoubleAttribute ("morph");
+                        presets[i].rest = childBank->getDoubleAttribute ("rest");
+                        presets[i].legato = childBank->getDoubleAttribute ("legato");
+                        presets[i].rate = childBank->getDoubleAttribute ("rate");
+                        presets[i].entropy = childBank->getDoubleAttribute ("entropy");
+                        presets[i].harmony = childBank->getDoubleAttribute ("harmony");
+                        presets[i].chaos = childBank->getDoubleAttribute ("chaos");
+                        presets[i].octaves = childBank->getDoubleAttribute ("octaves");
+                        for (int f = 0; f < 8; ++f) presets[i].faders[f] = childBank->getDoubleAttribute ("fader_" + juce::String (f));
+                        for (int l = 0; l < 8; ++l) {
+                            presets[i].lfoRates[l] = childBank->getIntAttribute ("lfo_r_" + juce::String (l));
+                            presets[i].lfoDepths[l] = childBank->getDoubleAttribute ("lfo_d_" + juce::String (l));
                         }
                     }
                 }

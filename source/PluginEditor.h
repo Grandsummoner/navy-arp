@@ -7,7 +7,7 @@
 #include "PluginProcessor.h"
 
 // ==============================================================================
-// Dynamically Compiled Global Color Themes Structure [NEW]
+// Dynamically Compiled Global Color Themes Structure
 // ==============================================================================
 struct AppTheme
 {
@@ -30,7 +30,7 @@ struct AppTheme
             t.border        = juce::Colour (0xFFB8B5AB);
             t.leftAccent    = juce::Colour (0xFFFF3B30); // Eurorack Red LED
             t.rightAccent   = juce::Colour (0xFF3A3A38); // Matte Charcoal
-            t.textDim       = juce::Colour (0xFF1A1A18); // Calibrated dark grey for high contrast [NEW]
+            t.textDim       = juce::Colour (0xFF1A1A18); // Calibrated dark grey for high contrast
             t.trackBg       = juce::Colour (0xFFD4D1C9);
             t.slotOutline   = juce::Colour (0xFFA8A59C);
             t.faderCap      = juce::Colour (0xFF1E1E1E);
@@ -193,7 +193,7 @@ public:
                 lfoRateVal = static_cast<int> (*processor.apvts.getRawParameterValue (IDs::octavesLfoRate.getParamID()));
                 float baseOctaves = static_cast<float> (*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
                 float rawOctaves = (lfoRateVal > 0) ? static_cast<float>(processor.activeOctavesVal) : baseOctaves;
-                visualValue = (rawOctaves + 2.0f) / 5.0f; // Symmetrical scale layout matching -2 to +3 [NEW]
+                visualValue = (rawOctaves + 2.0f) / 5.0f; 
             }
             
             lfoActive = (lfoRateVal > 0);
@@ -228,7 +228,7 @@ public:
             }
             else
             {
-                g.setColour (t.unlitLed); // Custom unlit led color mapped to current panel theme [NEW]
+                g.setColour (t.unlitLed); // Custom unlit led color mapped to panel theme
                 g.fillEllipse (ledX - 1.5f, ledY - 1.5f, 3.0f, 3.0f);
             }
         }
@@ -281,7 +281,7 @@ public:
             float stripeHeight = 2.0f;
             g.fillRect (capX + 2.0f, capY + capHeight * 0.5f - stripeHeight * 0.5f, capWidth - 4.0f, stripeHeight);
         }
-        else if (style == juce::Slider::LinearHorizontal) // Crossfader [5] [NEW]
+        else if (style == juce::Slider::LinearHorizontal) // Crossfader [5]
         {
             // Load active theme colors dynamically
             int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
@@ -296,7 +296,7 @@ public:
             g.setColour (t.slotOutline);
             g.drawRoundedRectangle ((float)x, trackY, (float)width, trackHeight, trackHeight * 0.5f, 1.0f);
 
-            // 3D DJ-Style Crossfader Cap [5] [NEW]
+            // 3D DJ-Style Crossfader Cap [5]
             float capWidth = 28.0f;
             float capHeight = 16.0f;
             float capX = sliderPos - capWidth * 0.5f;
@@ -317,7 +317,7 @@ public:
             g.setColour (juce::Colour (0xFF3A3F4E));
             g.drawRoundedRectangle (capX, capY, capWidth, capHeight, 2.0f, 1.0f);
 
-            // Vertical high-contrast indicator stripe [5] [NEW]
+            // Vertical high-contrast indicator stripe [5]
             // Morph Color-Coding: dynamically blends between Cyan/Amber
             float blendVal = (sliderPos - minSliderPos) / (maxSliderPos - minSliderPos);
             juce::Colour indicatorCol = t.leftAccent.interpolatedWith (t.rightAccent, blendVal);
@@ -332,7 +332,7 @@ public:
     }
 
     // ==============================================================================
-    // Custom Vector Dice Renderer (Eliminates OS Unicode Font Limitations) [NEW]
+    // Custom Vector Dice Renderer (Eliminates OS Unicode Font Limitations)
     // ==============================================================================
     void drawButtonText (juce::Graphics& g, juce::TextButton& button, bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown) override
     {
@@ -416,7 +416,7 @@ public:
 
     void timerCallback() override
     {
-        // Self-contained LFO parameter modification tracking loop [NEW]
+        // Self-contained LFO parameter modification tracking loop
         juce::String prefixes[] = { "rhythmMorph", "rest", "legato", "rate", "entropy", "harmony", "chaos", "octaves" };
         bool lfoParamChanged = false;
         int changedIdx = -1;
@@ -435,7 +435,7 @@ public:
             }
         }
 
-        // Set LFO preview oscilloscope fade out triggers [NEW]
+        // Set LFO preview oscilloscope fade out triggers
         if (lfoParamChanged)
         {
             lfoOverlayTimer = 45; // 1.5 seconds at 30Hz
@@ -462,7 +462,7 @@ public:
         // OLED Grid Area Calculations
         auto area = getLocalBounds().reduced (15);
 
-        // Render real-time LFO Waveform Oscilloscope Overlay on active parameter change [NEW]
+        // Render real-time LFO Waveform Oscilloscope Overlay on active parameter change
         if (lfoOverlayTimer > 0 && lfoActiveParamIdx >= 0)
         {
             juce::String prefixes[] = { "MORPH", "REST", "LEGATO", "RATE", "ENTROPY", "HARMONY", "CHAOS", "OCTAVES" };
@@ -477,7 +477,7 @@ public:
             g.drawText ("RATE: " + speedRate + " | DEPTH: " + juce::String(static_cast<int>(lastLfoDepths[lfoActiveParamIdx] * 100.0f)) + "%",
                         15, 25, getWidth() - 30, 15, juce::Justification::centred);
 
-            // Draw clean real-time scrolling sine wave representation [NEW]
+            // Draw clean real-time scrolling sine wave representation
             juce::Path wavePath;
             float waveYCenter = area.getCentreY() + 10.0f;
             float waveHeight = (area.getHeight() - 40.0f) * lastLfoDepths[lfoActiveParamIdx] * 0.45f;
@@ -637,9 +637,9 @@ private:
     juce::TextButton diceMelodyButton;
     juce::TextButton diceRhythmButton;
     
-    // Octatrack Scene Buttons [5]
-    juce::TextButton sceneAButtons[4];
-    juce::TextButton sceneBButtons[4];
+    // Symmetrical 3-Slot Scene Buttons [NEW]
+    juce::TextButton sceneAButtons[3];
+    juce::TextButton sceneBButtons[3];
     juce::TextButton diceSceneAButton;
     juce::TextButton diceSceneBButton;
 
@@ -651,17 +651,28 @@ private:
     juce::ComboBox scaleTypeBox;
     juce::ComboBox cycleLengthBox;
 
-    // Symmetrical time trackers for hold-to-save logic [5]
-    uint32_t sceneAPressStartTime[4] = { 0 };
-    uint32_t sceneBPressStartTime[4] = { 0 };
+    // Symmetrical time trackers for hold-to-save scene logic
+    uint32_t sceneAPressStartTime[3] = { 0 };
+    uint32_t sceneBPressStartTime[3] = { 0 };
 
-    // Symmetrical holds state tracker for real-time saving [NEW]
-    bool sceneAAlreadySaved[4] = { false };
-    bool sceneBAlreadySaved[4] = { false };
+    // Symmetrical holds state tracker for real-time saving
+    bool sceneAAlreadySaved[3] = { false };
+    bool sceneBAlreadySaved[3] = { false };
 
-    // Flash counters for visual confirm [5]
-    int sceneAFlashTimer[4] = { 0 };
-    int sceneBFlashTimer[4] = { 0 };
+    // Flash counters for visual confirm
+    int sceneAFlashTimer[3] = { 0 };
+    int sceneBFlashTimer[3] = { 0 };
+
+    // Dynamic Preset Slot Hold and Flash Trackers [NEW]
+    uint32_t presetPressStartTime[8] = { 0 };
+    bool presetAlreadySaved[8] = { false };
+    int presetFlashTimer[8] = { 0 };
+    int presetFlashType[8] = { 0 }; // 1 = Amber (Save), 2 = Cyan (Recall)
+
+    // Master Save Button Long-Press confirmation timers [NEW]
+    uint32_t savePressStartTime = 0;
+    bool saveAlreadySaved = false;
+    int saveFlashTimer = 0;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader1Attachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader2Attachment;
@@ -690,7 +701,7 @@ private:
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> cycleLengthAttachment;
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor) // Corrected leak detector macro [5]
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
 };
 
 #endif // NAVY_ARP_EDITOR_H
