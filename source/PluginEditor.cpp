@@ -216,6 +216,44 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     startTimerHz (30);
 }
 
+PluginEditor::~PluginEditor() 
+{ 
+    stopTimer(); 
+    
+    // Safety unregister custom LookAndFeel references on all rotary knobs [5]
+    rhythmMorphKnob.setLookAndFeel (nullptr);
+    restKnob.setLookAndFeel (nullptr);
+    legatoKnob.setLookAndFeel (nullptr);
+    rateKnob.setLookAndFeel (nullptr);
+    
+    entropyKnob.setLookAndFeel (nullptr);
+    harmonyKnob.setLookAndFeel (nullptr);
+    chaosKnob.setLookAndFeel (nullptr);
+    octavesKnob.setLookAndFeel (nullptr);
+
+    // Safety unregister custom LookAndFeel references on all bottom linear faders [5]
+    fader1.setLookAndFeel (nullptr);
+    fader2.setLookAndFeel (nullptr);
+    fader3.setLookAndFeel (nullptr);
+    fader4.setLookAndFeel (nullptr);
+    fader5.setLookAndFeel (nullptr);
+    fader6.setLookAndFeel (nullptr);
+    fader7.setLookAndFeel (nullptr);
+    fader8.setLookAndFeel (nullptr);
+
+    diceMelodyButton.onClick = nullptr;
+    diceRhythmButton.onClick = nullptr;
+    sceneAButton.onClick = nullptr;
+    sceneBButton.onClick = nullptr;
+
+    for (int i = 0; i < 8; ++i)
+    {
+        presetButtons[i].onClick = nullptr;
+        presetButtons[i].onStateChange = nullptr;
+        presetButtons[i].removeMouseListener(this); 
+    }
+}
+
 void PluginEditor::mouseDown (const juce::MouseEvent& event)
 {
     // 1. Double check presets right click saving
