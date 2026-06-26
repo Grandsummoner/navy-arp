@@ -75,11 +75,11 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Save and Load logic for the 4x4 Octatrack-style Scene engine [NEW]
-    void saveSceneA (int slotIndex);
-    void loadSceneA (int slotIndex);
-    void saveSceneB (int slotIndex);
-    void loadSceneB (int slotIndex);
+    // Save and Load logic inline forwards delegating to consolidated helpers [5] [NEW]
+    void saveSceneA (int slotIndex) { saveScene (slotIndex, 0); }
+    void loadSceneA (int slotIndex) { loadScene (slotIndex, 0); }
+    void saveSceneB (int slotIndex) { saveScene (slotIndex, 1); }
+    void loadSceneB (int slotIndex) { loadScene (slotIndex, 1); }
 
     bool isSceneASaved (int slotIndex) const { return sceneASlotsSaved[slotIndex]; }
     bool isSceneBSaved (int slotIndex) const { return sceneBSlotsSaved[slotIndex]; }
@@ -126,7 +126,7 @@ public:
     float activeMorph = 0.0f;
     float activeRest = 0.1f;
     float activeLegato = 0.5f;
-    int activeRateIdx = 2; 
+    int activeRateIdx = 2; // 0 = 1/4, 1 = 1/8, 2 = 1/16, 3 = 1/32
     float activeEntropy = 0.0f;
     float activeHarmony = 0.0f;
     float activeChaos = 0.0f;
@@ -143,6 +143,10 @@ private:
     void updateLfoModulations (int numSamples, double bpm);
     std::vector<int> generateEuclideanPattern (int steps, int pulses);
     void scheduleNoteOff (juce::MidiBuffer& midi, int pitch, int delaySamples);
+
+    // Private consolidated scene management helpers [5] [NEW]
+    void saveScene (int slotIndex, int side);
+    void loadScene (int slotIndex, int side);
 
     double mSampleRate = 44100.0;
     int mTimeInSamples = 0;
