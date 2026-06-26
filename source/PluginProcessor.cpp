@@ -101,20 +101,20 @@ void PluginProcessor::updateLfoModulations (int numSamples, double bpm)
         if (currentBarInCycle == 1) accumulatedPitchOffset = 0.0f;
     }
 
-    // Modern 8-Channel LFO Modulation Matrix Lambda [NEW]
+    // Modern 8-Channel LFO Modulation Matrix Lambda
     auto applyLfo = [&](int index, juce::ParameterID baseId, juce::ParameterID rateId, juce::ParameterID depthId, float minVal, float maxVal) -> float {
         float baseVal = *apvts.getRawParameterValue (baseId.getParamID());
         int rateChoice = static_cast<int> (*apvts.getRawParameterValue (rateId.getParamID()));
         float depth = *apvts.getRawParameterValue (depthId.getParamID());
         
-        if (rateChoice == 0) // Off
+        if (rateChoice == 0) 
             return baseVal;
             
         double divPPQ = 0.25; 
-        if (rateChoice == 1)      divPPQ = 1.0;   // 1/4 Note
-        else if (rateChoice == 2) divPPQ = 0.5;   // 1/8 Note
-        else if (rateChoice == 3) divPPQ = 0.25;  // 1/16 Note
-        else if (rateChoice == 4) divPPQ = 0.125; // 1/32 Note
+        if (rateChoice == 1)      divPPQ = 1.0;   
+        else if (rateChoice == 2) divPPQ = 0.5;   
+        else if (rateChoice == 3) divPPQ = 0.25;  
+        else if (rateChoice == 4) divPPQ = 0.125; 
         
         double periodSamples = samplesPerBeat * divPPQ;
         lfoPhases[index] += (sampleDelta / periodSamples);
@@ -126,16 +126,16 @@ void PluginProcessor::updateLfoModulations (int numSamples, double bpm)
         return juce::jlimit (minVal, maxVal, baseVal + mod);
     };
 
-    // Calculate dynamic modulated active values used in DSP and rendered on GUI [NEW]
+    // Calculate dynamic modulated active values used in DSP and rendered on GUI
     activeMorph   = applyLfo (0, IDs::rhythmMorph, IDs::rhythmMorphLfoRate, IDs::rhythmMorphLfoDepth, 0.0f, 1.0f);
     activeRest    = applyLfo (1, IDs::rest,        IDs::restLfoRate,        IDs::restLfoDepth,        0.0f, 1.0f);
     
-    // Map continuous legato modulation onto boundaries [NEW]
+    // Map continuous legato modulation onto boundaries
     activeLegato  = applyLfo (2, IDs::legato,      IDs::legatoLfoRate,      IDs::legatoLfoDepth,      0.1f, 1.0f);
     modLegato = activeLegato;
     modRest = activeRest;
 
-    // Modulate and round discrete parameters Rate and Octaves [NEW]
+    // Modulate and round discrete parameters Rate and Octaves
     float rawRate = applyLfo (3, IDs::rate, IDs::rateLfoRate, IDs::rateLfoDepth, 0.0f, 3.0f);
     activeRateIdx = juce::jlimit (0, 3, static_cast<int> (std::round (rawRate)));
 
@@ -266,7 +266,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         bool stepTriggered = false;
         double samplesPerBeat = mSampleRate * (60.0 / (bpm > 0 ? bpm : 120.0));
         
-        // Compute active step rate dynamically scaling with continuous modulated LFO [NEW]
+        // Compute active step rate dynamically scaling with continuous modulated LFO
         double stepLengthPPQ = 0.25; 
         if (activeRateIdx == 0)      stepLengthPPQ = 1.0;   // 1/4 Note
         else if (activeRateIdx == 1) stepLengthPPQ = 0.5;   // 1/8 Note
@@ -302,7 +302,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         {
             float faderProb = activeFaderProb[currentStep];
             
-            // Execute Euclidean ratcheting on modulated morph parameter [NEW]
+            // Execute Euclidean ratcheting on modulated morph parameter
             int ratchetPulses = static_cast<int>(std::round(activeMorph * 8.0f));
             std::vector<int> euclidRatchets = generateEuclideanPattern (8, ratchetPulses);
             bool isRatchetStep = euclidRatchets[currentStep] == 1;
@@ -336,7 +336,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                 int rawPitch = notesToPlay[currentStep % notesToPlay.size()];
                 int octave = (rawPitch / 12) * 12;
 
-                // Modulate active arpeggiation octave limit continuously [NEW]
+                // Modulate active arpeggiation octave limit continuously
                 int octaveShiftCount = (currentStep / 2) % activeOctavesVal;
 
                 int targetPitch = octave + rootKeyIdx + scaleOffsets[currentStep] + static_cast<int>(accumulatedPitchOffset) + (octaveShiftCount * 12);
@@ -402,7 +402,7 @@ void PluginProcessor::triggerDiatonicChordPad (int padIndex)
     int t = getScalePitch (padIndex + 2); 
     int f = getScalePitch (padIndex + 4); 
 
-    // Apply modulated continuous LFO parameter [NEW]
+    // Apply modulated continuous LFO parameter
     std::vector<int> newChord;
     if (activeHarmony >= 0.34f && activeHarmony < 0.67f)
     {
@@ -549,7 +549,7 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
 
     params.push_back (std::make_unique<juce::AudioParameterInt> (IDs::octaves, "Octaves", 1, 4, 1)); 
 
-    // Helper lambda to register 8-Channel LFO parameters [NEW]
+    // Helper lambda to register LFO parameters
     auto registerLfoParams = [&](juce::ParameterID rateId, juce::ParameterID depthId, juce::String name) {
         params.push_back (std::make_unique<juce::AudioParameterChoice> (rateId, name + " LFO Speed", 
             juce::StringArray { "Off", "1/4", "1/8", "1/16", "1/32" }, 0));

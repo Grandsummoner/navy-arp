@@ -419,6 +419,16 @@ void PluginEditor::timerCallback()
             presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF66666A));
         }
     }
+
+    // Force-repaint the 8 rotary knobs at 30Hz so the LFO visual "breathing" is smooth [CRITICAL FIX]
+    rhythmMorphKnob.repaint();
+    restKnob.repaint();
+    legatoKnob.repaint();
+    rateKnob.repaint();
+    entropyKnob.repaint();
+    harmonyKnob.repaint();
+    chaosKnob.repaint();
+    octavesKnob.repaint();
 }
 
 void PluginEditor::paint (juce::Graphics& g)

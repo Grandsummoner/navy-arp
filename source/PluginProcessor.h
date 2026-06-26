@@ -15,7 +15,7 @@ namespace IDs
     DECLARE_ID(rootKey); DECLARE_ID(scaleType); DECLARE_ID(cycleLength);
     DECLARE_ID(rate); DECLARE_ID(octaves); 
 
-    // New LFO Rate (Choices) and LFO Depth (Float) parameters for all 8 controls
+    // LFO Parameters for all 8 controls
     DECLARE_ID(rhythmMorphLfoRate); DECLARE_ID(rhythmMorphLfoDepth);
     DECLARE_ID(restLfoRate);        DECLARE_ID(restLfoDepth);
     DECLARE_ID(legatoLfoRate);      DECLARE_ID(legatoLfoDepth);
@@ -95,7 +95,7 @@ public:
     std::atomic<bool> isCurrentlyPlayingUI { false };
     std::atomic<int> activeChordExtensionType { 0 }; 
 
-    // Public active values modulated in real-time by the internal LFOs [NEW]
+    // Public active values modulated in real-time by the internal LFOs
     float activeMorph = 0.0f;
     float activeRest = 0.1f;
     float activeLegato = 0.5f;
@@ -127,7 +127,7 @@ private:
     
     std::vector<std::pair<int, int>> scheduledNoteOffs;
 
-    // 8 Independent LFO phases [NEW]
+    // 8 Independent LFO phases
     double lfoPhases[8] = { 0.0 };
 
     double lfoPhaseEntropy = 0.0;

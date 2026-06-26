@@ -280,9 +280,9 @@ public:
             // 2. Draw dynamic step bars
             if (i == processor.currentStep && isPlaying)
             {
-                if (i == 0)      g.setColour (juce::Colour (0xFF4CFF4C)); 
-                else if (i == 4) g.setColour (juce::Colour (0xFFFF4C4C)); 
-                else             g.setColour (juce::Colour (0xFF00FFFF)); 
+                if (i == 0)      g.setColour (juce::Colour (0xFF4CFF4C)); // Beat 1: Green
+                else if (i == 4) g.setColour (juce::Colour (0xFFFF4C4C)); // Beat 5: Red
+                else             g.setColour (juce::Colour (0xFF00FFFF)); // Others: Cyan
                 g.fillRect (bar.expanded(1, 1));
             }
             else
