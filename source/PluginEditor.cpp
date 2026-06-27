@@ -103,12 +103,10 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     // Symmetrical Octatrack Scene Buttons (Just bold "A" and "B" as manual anchor toggles)
     addAndMakeVisible (sceneAButton);
     sceneAButton.setButtonText ("A");
-    sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
     sceneAButton.addMouseListener (this, false); 
 
     addAndMakeVisible (sceneBButton);
     sceneBButton.setButtonText ("B");
-    sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
     sceneBButton.addMouseListener (this, false); 
 
     // Left-Hand 2x2 Utility Grid (Sentence Case, no shouting)
@@ -165,8 +163,6 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     {
         addAndMakeVisible (presetButtons[i]);
         presetButtons[i].setButtonText (juce::String (i + 1));
-        presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505));
-        presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF444444));
         presetButtons[i].addMouseListener (this, false);
     }
 
@@ -938,11 +934,15 @@ void PluginEditor::resized()
         leftTitles[i]->setBounds (row);
     }
     
-    int leftBtnWidth = leftBtnArea.getWidth() / 2;
-    saveButton.setBounds (leftBtnArea.removeFromLeft (leftBtnWidth).reduced (2));
-    recallButton.setBounds (leftBtnArea.removeFromLeft (leftBtnWidth).reduced (2));
-    copyButton.setBounds (leftBtnArea.removeFromLeft (leftBtnWidth).reduced (2));
-    initButton.setBounds (leftBtnArea.reduced (2));
+    // Mathematically corrected 2x2 grid slicing on Left Sidebar (No overlapping/zero-width clipping) [NEW]
+    auto leftTopRow = leftBtnArea.removeFromTop (leftBtnArea.getHeight() / 2);
+    auto leftBottomRow = leftBtnArea;
+    int leftColWidth = leftTopRow.getWidth() / 2;
+    
+    saveButton.setBounds (leftTopRow.removeFromLeft (leftColWidth).reduced (2));
+    recallButton.setBounds (leftTopRow.reduced (2));
+    copyButton.setBounds (leftBottomRow.removeFromLeft (leftColWidth).reduced (2));
+    initButton.setBounds (leftBottomRow.reduced (2));
 
     // Right Sidebar Layout
     auto diceArea = rightSidebar.removeFromBottom (70).reduced (5, 2);
@@ -959,11 +959,15 @@ void PluginEditor::resized()
         rightTitles[i]->setBounds (row);
     }
     
-    int diceBtnWidth = diceArea.getWidth() / 2;
-    diceMeloButton.setBounds (diceArea.removeFromLeft (diceBtnWidth).reduced (2));
-    diceArtiButton.setBounds (diceArea.removeFromLeft (diceBtnWidth).reduced (2));
-    diceTimeButton.setBounds (diceArea.removeFromLeft (diceBtnWidth).reduced (2));
-    diceNavyButton.setBounds (diceArea.reduced (2));
+    // Mathematically corrected 2x2 grid slicing on Right Sidebar (No overlapping/zero-width clipping) [NEW]
+    auto rightTopRow = diceArea.removeFromTop (diceArea.getHeight() / 2);
+    auto rightBottomRow = diceArea;
+    int rightColWidth = rightTopRow.getWidth() / 2;
+    
+    diceMeloButton.setBounds (rightTopRow.removeFromLeft (rightColWidth).reduced (2));
+    diceArtiButton.setBounds (rightTopRow.reduced (2));
+    diceTimeButton.setBounds (rightBottomRow.removeFromLeft (rightColWidth).reduced (2));
+    diceNavyButton.setBounds (rightBottomRow.reduced (2));
 
     // 4. Center Section: Dropdown Bar, OLED Display, and 8 Preset Buttons
     int presetHeight = static_cast<int>(totalHeight * 0.06f);

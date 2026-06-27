@@ -193,7 +193,7 @@ public:
                 lfoRateVal = static_cast<int> (*processor.apvts.getRawParameterValue (IDs::octavesLfoRate.getParamID()));
                 float baseOctaves = static_cast<float> (*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
                 float rawOctaves = (lfoRateVal > 0) ? static_cast<float>(processor.activeOctavesVal) : baseOctaves;
-                visualValue = (rawOctaves + 3.0f) / 6.0f; // Symmetrical scale layout matching -3 to +3 [NEW]
+                visualValue = (rawOctaves + 3.0f) / 6.0f; // Symmetrical scale layout matching -3 to +3
             }
             
             lfoActive = (lfoRateVal > 0);
@@ -207,7 +207,7 @@ public:
             }
         }
 
-        // Draw 15 discrete circular LED dots [5]
+        // Draw 15 discrete circular LED dots
         for (int i = 0; i < numLeds; ++i)
         {
             float pct = static_cast<float>(i) / static_cast<float>(numLeds - 1);
@@ -238,13 +238,13 @@ public:
                            float sliderPos, float minSliderPos, float maxSliderPos,
                            const juce::Slider::SliderStyle style, juce::Slider& slider) override
     {
-        // Custom vertical mixer-style faders [5]
+        // Custom vertical mixer-style faders
         if (style == juce::Slider::LinearVertical)
         {
             auto trackWidth = 4.0f;
             auto trackX = x + width * 0.5f - trackWidth * 0.5f;
             
-            // Load active theme colors dynamically [NEW]
+            // Load active theme colors dynamically
             int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
             auto t = AppTheme::get (themeIdx);
 
@@ -276,12 +276,12 @@ public:
             g.setColour (juce::Colour (0xFF3A3F4E));
             g.drawRoundedRectangle (capX, capY, capWidth, capHeight, 2.0f, 1.0f);
 
-            // Horizontal high-contrast stripe [5]
+            // Horizontal high-contrast stripe
             g.setColour (slider.findColour (juce::Slider::thumbColourId));
             float stripeHeight = 2.0f;
             g.fillRect (capX + 2.0f, capY + capHeight * 0.5f - stripeHeight * 0.5f, capWidth - 4.0f, stripeHeight);
         }
-        else if (style == juce::Slider::LinearHorizontal) // Crossfader [5]
+        else if (style == juce::Slider::LinearHorizontal) // Crossfader
         {
             // Load active theme colors dynamically
             int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
@@ -290,13 +290,13 @@ public:
             auto trackHeight = 4.0f;
             auto trackY = y + height * 0.5f - trackHeight * 0.5f;
 
-            // Recessed horizontal slot [5]
+            // Recessed horizontal slot
             g.setColour (t.trackBg);
             g.fillRoundedRectangle ((float)x, trackY, (float)width, trackHeight, trackHeight * 0.5f);
             g.setColour (t.slotOutline);
             g.drawRoundedRectangle ((float)x, trackY, (float)width, trackHeight, trackHeight * 0.5f, 1.0f);
 
-            // 3D DJ-Style Crossfader Cap [5]
+            // 3D DJ-Style Crossfader Cap
             float capWidth = 28.0f;
             float capHeight = 16.0f;
             float capX = sliderPos - capWidth * 0.5f;
@@ -317,7 +317,7 @@ public:
             g.setColour (juce::Colour (0xFF3A3F4E));
             g.drawRoundedRectangle (capX, capY, capWidth, capHeight, 2.0f, 1.0f);
 
-            // Vertical high-contrast indicator stripe [5]
+            // Vertical high-contrast indicator stripe
             // Morph Color-Coding: dynamically blends between Cyan/Amber
             float blendVal = (sliderPos - minSliderPos) / (maxSliderPos - minSliderPos);
             juce::Colour indicatorCol = t.leftAccent.interpolatedWith (t.rightAccent, blendVal);
@@ -343,13 +343,13 @@ public:
         if (id == "dice_melody" || id == "dice_articulation" || id == "dice_time" || id == "dice_navy")
         {
             auto bounds = button.getLocalBounds().toFloat();
-            auto diceBounds = bounds.removeFromLeft (12.0f).reduced (1.0f); // Standardized 12px vector dice bounds [NEW]
+            auto diceBounds = bounds.removeFromLeft (12.0f).reduced (1.0f); // Standardized 12px vector dice bounds
             
             juce::Colour pipCol = t.rightAccent;
             if (shouldDrawButtonAsDown) pipCol = pipCol.brighter (0.2f);
             drawVectorDice (g, diceBounds, pipCol);
             
-            // Render text next to it in sentence case (no shouting) [NEW]
+            // Render text next to it in sentence case (no shouting)
             g.setColour (button.findColour (juce::TextButton::textColourOffId));
             g.setFont (getTextButtonFont (button, button.getHeight()));
             g.drawFittedText (button.getButtonText(), bounds.toNearestInt(), juce::Justification::centred, 1);
@@ -447,7 +447,7 @@ public:
         int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
         auto t = AppTheme::get (themeIdx);
 
-        // Keep OLED screen background dark, high-contrast, and professional even on light beige panels! [NEW]
+        // Keep OLED screen background dark, high-contrast, and professional even on light beige panels!
         g.fillAll (juce::Colour (0xFF08080A)); // Deep Obsidian canvas
         g.setColour (t.border); 
         g.drawRect (getLocalBounds().toFloat(), 2.0f);
@@ -461,14 +461,14 @@ public:
             juce::String prefixes[] = { "MORPH", "REST", "LEGATO", "RATE", "ENTROPY", "HARMONY", "CHAOS", "OCTAVES" };
             
             g.setColour (t.leftAccent);
-            g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); // Dynamic font config [NEW]
+            g.setFont (juce::Font (juce::FontOptions (15.0f).withStyle ("Bold"))); // Dynamic font config - upscaled to 15pt [NEW]
             g.drawText ("LFO PREVIEW: " + prefixes[lfoActiveParamIdx], 15, 12, getWidth() - 30, 20, juce::Justification::centred);
 
-            g.setFont (juce::Font (juce::FontOptions (10.0f)));
+            g.setFont (juce::Font (juce::FontOptions (12.0f))); // Upscaled metadata to 12pt [NEW]
             g.setColour (juce::Colour (0xFFFFB300));
             juce::String speedRate = processor.apvts.getParameter(prefixes[lfoActiveParamIdx].toLowerCase() + "LfoRate")->getCurrentValueAsText();
             g.drawText ("RATE: " + speedRate + " | DEPTH: " + juce::String(static_cast<int>(lastLfoDepths[lfoActiveParamIdx] * 100.0f)) + "%",
-                        15, 25, getWidth() - 30, 15, juce::Justification::centred);
+                        15, 27, getWidth() - 30, 15, juce::Justification::centred);
 
             // Draw clean real-time scrolling sine wave representation
             juce::Path wavePath;
@@ -502,16 +502,16 @@ public:
             return; 
         }
 
-        // Draw Inverted Header Banner [NEW]
+        // Draw Inverted Header Banner
         auto headerArea = getLocalBounds().removeFromTop (25);
         g.setColour (juce::Colour (0xFF181C24)); // Dark-charcoal banner strip
         g.fillRect (headerArea);
         
         g.setColour (juce::Colour (0xFFFFFFFF)); // Crisp white text
-        g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); 
+        g.setFont (juce::Font (juce::FontOptions (15.0f).withStyle ("Bold"))); // Upscaled to 15pt [NEW]
         g.drawText ("NAVY-ARP MONITOR", headerArea, juce::Justification::centred, true);
 
-        // Real-time OLED Context Information [NEW]
+        // Real-time OLED Context Information
         juce::String scaleName = processor.apvts.getParameter(IDs::scaleType.getParamID())->getCurrentValueAsText();
         juce::String keyName = processor.apvts.getParameter(IDs::rootKey.getParamID())->getCurrentValueAsText();
         int extType = processor.activeChordExtensionType.load();
@@ -521,14 +521,12 @@ public:
         int octValue = static_cast<int>(*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
         juce::String activeOcts = (octValue >= 0) ? "+" + juce::String (octValue) : juce::String (octValue);
 
-        g.setFont (juce::Font (juce::FontOptions (10.0f))); // Compact metadata size [NEW]
-        g.setColour (juce::Colour (0xFFFFB300)); // Vivid Amber-Orange
+        g.setFont (juce::Font (juce::FontOptions (12.0f))); // Upscaled metadata size to 12pt [NEW]
+        g.setColour (juce::Colour (0xFFFFB300)); // Saturated high-contrast Amber-Orange [NEW]
         g.drawText ("KEY: " + keyName + " | SCALE: " + scaleName + " | VOICE: " + extText + " | RATE: " + speedRate + " | OCT: " + activeOcts, 
                     10, 27, getWidth() - 20, 15, juce::Justification::centred);
 
         area.removeFromTop (27); 
-        
-        // 4 Horizontal lines removed for visual cleanliness [NEW]
 
         int barWidth = area.getWidth() / 8;
         int spacing = 6;
@@ -536,23 +534,23 @@ public:
         for (int i = 0; i < 8; ++i)
         {
             float faderProb = *processor.apvts.getRawParameterValue ("fader" + juce::String (i + 1));
-            int barHeight = static_cast<int>((area.getHeight() - 20) * faderProb * 0.75f);
+            
+            // Symmetrical Segmented VU-Meter Stack drawing (Chunky VU meter-esque blocks, 6px height with 2px gaps) [NEW]
+            int stepSegments = static_cast<int>((area.getHeight() - 20) * faderProb * 0.75f) / 8;
             
             juce::Rectangle<int> bar (area.getX() + (i * barWidth) + spacing, 
-                                      area.getBottom() - barHeight - 15, 
+                                      area.getBottom() - (stepSegments * 8) - 15, 
                                       barWidth - (spacing * 2), 
-                                      barHeight);
+                                      stepSegments * 8);
 
             bool isPlaying = processor.isCurrentlyPlayingUI.load();
 
-            // Symmetrical Segmented VU-Meter Stack drawing [NEW]
-            int stepSegments = juce::jmax (1, barHeight / 3);
             for (int seg = 0; seg < stepSegments; ++seg)
             {
-                int segY = bar.getBottom() - (seg * 4) - 3;
+                int segY = bar.getBottom() - (seg * 8) - 6;
                 if (segY < bar.getY()) break;
                 
-                juce::Rectangle<int> segment (bar.getX(), segY, bar.getWidth(), 3);
+                juce::Rectangle<int> segment (bar.getX(), segY, bar.getWidth(), 6); // 6px segment height
                 
                 if (i == processor.currentStep && isPlaying)
                 {
@@ -569,7 +567,7 @@ public:
 
             // Step indicators
             juce::String stepNumStr = juce::String (i + 1);
-            g.setFont (juce::Font (juce::FontOptions (8.0f))); // Unified Micro-Monospace [NEW]
+            g.setFont (juce::Font (juce::FontOptions (10.0f))); // Monospace size upscaled to 10pt [NEW]
             
             if (i == processor.currentStep && isPlaying)
             {
@@ -584,7 +582,7 @@ public:
             g.drawText (stepNumStr, numX, area.getBottom() - 12, barWidth, 12, juce::Justification::centred);
         }
         
-        // Draw diagonal glass reflection glint [NEW]
+        // Draw diagonal glass reflection glint
         juce::Path glint;
         glint.startNewSubPath (0.0f, 0.0f);
         glint.lineTo (static_cast<float>(getWidth() * 0.45f), 0.0f);
@@ -639,7 +637,7 @@ private:
 
     juce::Slider morphCrossfader;
 
-    // Performance Deck Buttons [NEW]
+    // Performance Deck Buttons
     juce::TextButton latchButton;
     juce::TextButton arpSeqButton;
     juce::TextButton polyButton;
@@ -683,7 +681,7 @@ private:
     int presetFlashTimer[8] = { 0 };
     int presetFlashType[8] = { 0 }; 
 
-    // Master Utility Latching and Long-Press Trackers [NEW]
+    // Master Utility Latching and Long-Press Trackers
     uint32_t savePressStartTime = 0;
     bool saveAlreadySaved = false;
     int saveFlashTimer = 0;

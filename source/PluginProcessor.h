@@ -42,7 +42,7 @@ struct SceneState {
     float chaos = 0.0f;
     float octaves = 0.0f; // Default 0 (no octave shift)
 
-    // Full 16-channel LFO parameter states
+    // Full 16-channel LFO parameter states [5]
     int lfoRates[8] = { 0 };
     float lfoDepths[8] = { 0.0f };
 };
@@ -86,7 +86,7 @@ public:
     void loadPreset (int slotIndex);
     bool isPresetSaved (int slotIndex) const { return presetSlotsSaved[slotIndex]; }
 
-    // Unified Project-Based Scene Arrays (Presets 1-8 save/restore both Scene A & B)
+    // Unified Project-Based Scene Arrays (Presets 1-8 save/restore both Scene A & B) [NEW]
     SceneState sceneAPresets[8];
     SceneState sceneBPresets[8];
     bool sceneASlotsSaved[8] = { false };
@@ -98,9 +98,9 @@ public:
     bool hasSceneB = false;
 
     std::atomic<int> activePresetIndex { 0 }; // Keeps track of currently selected preset slot
-    std::atomic<bool> isSceneBActiveAnchor { false }; // Active editing/loading target
+    std::atomic<bool> isSceneBActiveAnchor { false }; // Active editing/loading target [NEW]
 
-    // Generative triggers (No LFO randomization, strictly protected!)
+    // Generative triggers (No LFO randomization, strictly protected!) [NEW]
     void diceMelody();
     void diceArticulation();
     void diceTime();
@@ -172,7 +172,7 @@ private:
     SceneState presets[8];
     bool presetSlotsSaved[8] = { false };
 
-    // Slew smoothing arrays for pop-free transitions
+    // Slew smoothing arrays for pop-free transitions [NEW]
     float currentSlewTarget[24] = { 0.0f };
     float currentSlewValue[24] = { 0.0f };
 
