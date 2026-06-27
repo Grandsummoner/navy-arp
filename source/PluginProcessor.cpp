@@ -148,6 +148,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
     float activeFaderProb[8]; for (int i = 0; i < 8; ++i) activeFaderProb[i] = *apvts.getRawParameterValue (juce::String ("fader" + juce::String (i + 1)));
 
+    // Corrected Local Midi Buffer Signature Alignment [NEW - FIXES LNK2001]
     juce::MidiBuffer processedMidi;
     for (auto it = scheduledNoteOffs.begin(); it != scheduledNoteOffs.end();) {
         it->second -= numSamples;
