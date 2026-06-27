@@ -110,12 +110,6 @@ void PluginProcessor::updateLfoModulations (int numSamples, double bpm)
     activeOctavesVal = juce::jlimit (-3, 3, static_cast<int> (std::round (rawOctaves)));
 }
 
-void PluginProcessor::scheduleNoteOff (juce::MidiBuffer& midi, int pitch, int delaySamples)
-{
-    if (delaySamples <= 0) midi.addEvent (juce::MidiMessage::noteOff (1, pitch), 0);
-    else scheduledNoteOffs.push_back ({ pitch, delaySamples });
-}
-
 void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     buffer.clear(); bool isPlaying = false; double bpm = 120.0; mSongPositionPPQ = 0.0;
@@ -154,6 +148,13 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
         it->second -= numSamples;
         if (it->second <= 0) { processedMidi.addEvent (juce::MidiMessage::noteOff (1, it->first), 0); it = scheduledNoteOffs.erase(it); }
         else ++it;
+    }
+
+    // Latch Active keyboard sync catcher (Instantly populates latch buffer to avoid silent start dropouts) [NEW]
+    if (isLatchActive && latchedNotes.empty() && !activeHeldNotes.empty())
+    {
+        latchedNotes = activeHeldNotes;
+        isFirstNoteOfNewChord = false;
     }
 
     for (const auto metadata : midiMessages) {
@@ -248,32 +249,40 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
                 // 1. Get raw base note based on active play mode 
                 int rawPitch = 60;
+                int octaveBase = 60;
                 if (isArpActive && !notesToPlay.empty())
                 {
                     // ARPEGGIATOR: cycles dynamically through held note pool 
                     rawPitch = notesToPlay[currentStep % notesToPlay.size()];
+                    octaveBase = ((rawPitch - rootKeyIdx) / 12) * 12 + rootKeyIdx;
                 }
                 else
                 {
                     // SEQUENCER: plays fixed scale-degree from active preset faders 
                     int scaleDeg = scaleOffsets[currentStep % scaleOffsets.size()];
                     rawPitch = 48 + rootKeyIdx + scaleDeg;
+                    octaveBase = ((rawPitch - rootKeyIdx) / 12) * 12 + rootKeyIdx;
                 }
 
-                // 2. Diatonic Note Thinning (Harmony knob filters chords from 5 down to 1 note) 
+                // 2. Diatonic Note Thinning (Harmony knob filters chords from 5 down to 1 note, works polyphonically) [NEW]
                 std::vector<int> pitchList;
                 pitchList.push_back (rawPitch);
                 
-                if (isPolyActive && notesToPlay.size() > 1) // Polyphonic Cluster Mode 
+                if (isPolyActive) // Polyphonic Cluster Mode [NEW - DIATONIC HARMONY ENGAGED]
                 {
                     int maxAllowedNotes = 1;
                     if (modHarmony > 0.25f && modHarmony < 0.5f)       maxAllowedNotes = 2; // Intervals
                     else if (modHarmony >= 0.5f && modHarmony < 0.75f) maxAllowedNotes = 3; // Triads
-                    else if (modHarmony >= 0.75f)                      maxAllowedNotes = 5; // Full chords
+                    else if (modHarmony >= 0.75f)                      maxAllowedNotes = 4; // Chords (Root + 3rd + 5th + 7th)
                     
-                    for (size_t n = 1; n < notesToPlay.size() && pitchList.size() < static_cast<size_t>(maxAllowedNotes); ++n)
+                    if (maxAllowedNotes > 1)
                     {
-                        pitchList.push_back (notesToPlay[n]);
+                        for (int n = 1; n < maxAllowedNotes; ++n)
+                        {
+                            int degreeIndex = (currentStep + n * 2) % scaleOffsets.size();
+                            int chordPitch = octaveBase + scaleOffsets[degreeIndex];
+                            pitchList.push_back (chordPitch);
+                        }
                     }
                 }
 
@@ -281,7 +290,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                 for (auto& pitch : pitchList)
                 {
                     int noteOffset = (pitch - rootKeyIdx) % 12;
-                    int octaveBase = ((pitch - rootKeyIdx) / 12) * 12 + rootKeyIdx;
+                    int octBase = ((pitch - rootKeyIdx) / 12) * 12 + rootKeyIdx;
                     
                     // Simple round-to-nearest semitone quantizer 
                     int nearestVal = scaleOffsets[0];
@@ -291,7 +300,7 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                         int diff = std::abs (offset - noteOffset);
                         if (diff < minDiff) { minDiff = diff; nearestVal = offset; }
                     }
-                    pitch = octaveBase + nearestVal;
+                    pitch = octBase + nearestVal;
                 }
 
                 // 4. Intellijel Metropolis Range additions (Octaves, ratchets, slides, etc.) 

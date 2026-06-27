@@ -103,10 +103,12 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     // Symmetrical Octatrack Scene Buttons (Just bold "A" and "B" as manual anchor toggles)
     addAndMakeVisible (sceneAButton);
     sceneAButton.setButtonText ("A");
+    sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
     sceneAButton.addMouseListener (this, false); 
 
     addAndMakeVisible (sceneBButton);
     sceneBButton.setButtonText ("B");
+    sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
     sceneBButton.addMouseListener (this, false); 
 
     // Left-Hand 2x2 Utility Grid (Sentence Case, no shouting)
@@ -163,6 +165,8 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     {
         addAndMakeVisible (presetButtons[i]);
         presetButtons[i].setButtonText (juce::String (i + 1));
+        presetButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505));
+        presetButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF444444));
         presetButtons[i].addMouseListener (this, false);
     }
 
@@ -316,7 +320,7 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
         }
     }
 
-    // 2. Left-hand 2x2 Utility long-press armings [NEW - Removed unused themeIdx initialization]
+    // 2. Left-hand 2x2 Utility long-press armings (Latching Modifier Engine) [NEW]
     if (event.eventComponent == &saveButton)
     {
         savePressStartTime = juce::Time::getMillisecondCounter();
@@ -338,7 +342,82 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
         initAlreadySaved = false;
     }
 
-    // 3. Right-Click LFO Modulation Menu Popup
+    // 3. Sequential Latching Modifier Actions [NEW]
+    if (initButton.getToggleState())
+    {
+        bool actionTriggered = false;
+        if (event.eventComponent == &diceMeloButton)
+        {
+            processor.resetRhythm(); // Clears faders to flat 100%
+            actionTriggered = true;
+        }
+        else if (event.eventComponent == &diceArtiButton)
+        {
+            processor.apvts.getParameter(IDs::rest.getParamID())->setValueNotifyingHost(0.0f);
+            processor.apvts.getParameter(IDs::legato.getParamID())->setValueNotifyingHost(0.5f);
+            actionTriggered = true;
+        }
+        else if (event.eventComponent == &diceTimeButton)
+        {
+            processor.apvts.getParameter(IDs::rate.getParamID())->setValueNotifyingHost(2.0f / 3.0f); // 1/16
+            processor.apvts.getParameter(IDs::octaves.getParamID())->setValueNotifyingHost(3.0f / 6.0f); // +0 Octaves
+            processor.apvts.getParameter(IDs::cycleLength.getParamID())->setValueNotifyingHost(2.0f / 3.0f); // 4 Bars
+            actionTriggered = true;
+        }
+        else if (event.eventComponent == &diceNavyButton)
+        {
+            processor.apvts.getParameter(IDs::rhythmMorph.getParamID())->setValueNotifyingHost(0.0f);
+            processor.apvts.getParameter(IDs::entropy.getParamID())->setValueNotifyingHost(0.0f);
+            processor.apvts.getParameter(IDs::harmony.getParamID())->setValueNotifyingHost(0.0f);
+            processor.apvts.getParameter(IDs::chaos.getParamID())->setValueNotifyingHost(0.0f);
+            actionTriggered = true;
+        }
+        else if (event.eventComponent == &sceneAButton)
+        {
+            processor.clearSceneA();
+            sceneAFlashTimer = 24; // Visual confirmation flash
+            actionTriggered = true;
+        }
+        else if (event.eventComponent == &sceneBButton)
+        {
+            processor.clearSceneB();
+            sceneBFlashTimer = 24; // Visual confirmation flash
+            actionTriggered = true;
+        }
+
+        if (actionTriggered)
+        {
+            initButton.setToggleState (false, juce::dontSendNotification);
+            initButton.repaint();
+            return;
+        }
+    }
+
+    if (copyButton.getToggleState())
+    {
+        bool actionTriggered = false;
+        if (event.eventComponent == &sceneAButton)
+        {
+            processor.saveSceneA();
+            sceneAFlashTimer = 24;
+            actionTriggered = true;
+        }
+        else if (event.eventComponent == &sceneBButton)
+        {
+            processor.saveSceneB();
+            sceneBFlashTimer = 24;
+            actionTriggered = true;
+        }
+
+        if (actionTriggered)
+        {
+            copyButton.setToggleState (false, juce::dontSendNotification);
+            copyButton.repaint();
+            return;
+        }
+    }
+
+    // 4. Right-Click LFO Modulation Menu Popup
     if (event.mods.isRightButtonDown() && event.eventComponent != this)
     {
         juce::Slider* clickedSlider = nullptr;
@@ -406,7 +485,7 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
         }
     }
 
-    // 4. Right-Click Main Panel Background Context Menu Theme Switcher [NEW]
+    // 5. Right-Click Main Panel Background Context Menu Theme Switcher [NEW]
     if (event.mods.isRightButtonDown() && event.eventComponent == this)
     {
         juce::PopupMenu menu;
@@ -426,7 +505,7 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
         });
     }
 
-    // 5. Active Anchor selection and holds (Tapping targets manual edit focus, holding saves)
+    // 6. Active Anchor selection and holds (Tapping targets manual edit focus, holding saves)
     if (event.eventComponent == &sceneAButton)
     {
         sceneAPressStartTime = juce::Time::getMillisecondCounter();
@@ -491,7 +570,7 @@ void PluginEditor::timerCallback()
         processor.isSceneBActiveAnchor.store (morphValue > 0.5f);
     }
 
-    // Motorized Parameter Gliding: pull morphs from our active sceneA and sceneB [NEW]
+    // Motorized Parameter Gliding: pull morphs from our active sceneA and sceneB
     if (processor.hasSceneA && processor.hasSceneB && morphCrossfader.isMouseButtonDown())
     {
         for (int i = 0; i < 8; ++i)
@@ -734,13 +813,7 @@ void PluginEditor::timerCallback()
         }
     }
 
-    // Dynamic Solid Contrast text color calibration
-    juce::Colour textCol = (themeIdx == 1) ? juce::Colour (0xFF1A1A18) : juce::Colours::white;
-
-    // Symmetrical Scene LEDs with Real-Time Crossfade Power Shifting
-    bool focusB = processor.isSceneBActiveAnchor.load();
-
-    // Scene A Colors (Pastel Green Saved, Dynamic LED brightness on Active)
+    // Symmetrical Scene LEDs with Real-Time Active-Anchor Custom Styling [NEW - COMPLETELY BLACK DEFAULT LOGIC]
     if (sceneAFlashTimer > 0) // Amber Write Flash
     {
         sceneAFlashTimer--;
@@ -754,28 +827,21 @@ void PluginEditor::timerCallback()
         }
         else
         {
-            sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-            sceneAButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+            sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505)); // Pure black unlit body
+            sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF550000)); // Dark red unlit text
         }
     }
-    else if (! focusB) // Active (Intensity proportional to focus)
+    else if (! focusB) // Active Anchor (Glowing Intense Red on Black Base)
     {
-        juce::Colour greenLED = juce::Colour (0xFF00FF66);
-        sceneAButton.setColour (juce::TextButton::buttonColourId, greenLED);
-        sceneAButton.setColour (juce::TextButton::textColourOffId, textCol); 
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF3A1010)); // Deep red background backlit glow
+        sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFF0000)); // Highly visible neon red text
     }
-    else if (processor.hasSceneA) // Saved Inactive (Pastel Green)
+    else // Empty / Inactive (Totally Dark default)
     {
-        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A2F25));
-        sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF4CFF99));
-    }
-    else // Empty Unsaved
-    {
-        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-        sceneAButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505)); // Pure black unlit body
+        sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF550000)); // Dark red unlit text
     }
 
-    // Scene B Colors (Pastel Blue Saved, Dynamic LED brightness on Active)
     if (sceneBFlashTimer > 0) // Amber Write Flash
     {
         sceneBFlashTimer--;
@@ -789,25 +855,19 @@ void PluginEditor::timerCallback()
         }
         else
         {
-            sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-            sceneBButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+            sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505)); // Pure black unlit body
+            sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF550000)); // Dark red unlit text
         }
     }
-    else if (focusB) // Active (Intensity proportional to focus)
+    else if (focusB) // Active Anchor (Glowing Intense Red on Black Base)
     {
-        juce::Colour blueLED = juce::Colour (0xFF00D2FF);
-        sceneBButton.setColour (juce::TextButton::buttonColourId, blueLED);
-        sceneBButton.setColour (juce::TextButton::textColourOffId, textCol); 
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF3A1010)); // Deep red background backlit glow
+        sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFFFF0000)); // Highly visible neon red text
     }
-    else if (processor.hasSceneB) // Saved Inactive (Pastel Blue)
+    else // Empty / Inactive (Totally Dark default)
     {
-        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A2B3D));
-        sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF4CCFFF));
-    }
-    else // Empty Unsaved
-    {
-        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-        sceneBButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF050505)); // Pure black unlit body
+        sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF550000)); // Dark red unlit text
     }
 
     // Dynamic preset saved status and flash glow
@@ -855,18 +915,73 @@ void PluginEditor::timerCallback()
 
 void PluginEditor::paint (juce::Graphics& g)
 {
+    // Draw 3D warm-reflection brushed metal faceplate [NEW]
     int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
     auto t = AppTheme::get (themeIdx);
 
-    g.fillAll (t.background);
+    juce::ColourGradient faceplateGrad (t.background.brighter (0.02f), 0.0f, 0.0f,
+                                        t.background.darker (0.06f), (float)getWidth(), (float)getHeight(), false);
+    g.setGradientFill (faceplateGrad);
+    g.fillAll();
+
     g.setColour (t.border);
     g.drawRect (getLocalBounds().toFloat(), 3.0f);
     g.drawHorizontalLine (getHeight() - static_cast<int>(getHeight() * 0.22f), 15.0f, getWidth() - 15.0f);
 
+    // 3D Engraved section grooves / chassis dividing lines [NEW]
+    int sidebarWidth = static_cast<int>(getWidth() * 0.15f); 
+    
+    float grooveX1 = (float)sidebarWidth + 5.0f;
+    g.setColour (t.border.darker (0.25f));
+    g.drawVerticalLine (static_cast<int>(grooveX1), 10.0f, (float)getHeight() - 10.0f);
+    g.setColour (juce::Colours::white.withAlpha (themeIdx == 1 ? 0.35f : 0.08f));
+    g.drawVerticalLine (static_cast<int>(grooveX1 + 1.0f), 10.0f, (float)getHeight() - 10.0f);
+
+    float grooveX2 = (float)(getWidth() - sidebarWidth) - 5.0f;
+    g.setColour (t.border.darker (0.25f));
+    g.drawVerticalLine (static_cast<int>(grooveX2), 10.0f, (float)getHeight() - 10.0f);
+    g.setColour (juce::Colours::white.withAlpha (themeIdx == 1 ? 0.35f : 0.08f));
+    g.drawVerticalLine (static_cast<int>(grooveX2 + 1.0f), 10.0f, (float)getHeight() - 10.0f);
+
+    // 3D Recessed Display Outer Bevel frame cutout [NEW]
+    auto oledBounds = oledDisplay.getBounds().toFloat().expanded(1.0f);
+    g.setColour (t.border.darker(0.35f));
+    g.drawRect (oledBounds, 1.2f);
+    g.setColour (juce::Colours::white.withAlpha (themeIdx == 1 ? 0.45f : 0.08f));
+    g.drawHorizontalLine (static_cast<int>(oledBounds.getBottom() + 1.0f), oledBounds.getX(), oledBounds.getRight() + 1.0f);
+    g.drawVerticalLine (static_cast<int>(oledBounds.getRight() + 1.0f), oledBounds.getY(), oledBounds.getBottom() + 1.0f);
+
+    // 4 Symmetrical corner mounting screws [NEW]
+    auto drawScrew = [&](float cx, float cy) {
+        float r = 5.0f;
+        g.setColour (juce::Colour (themeIdx == 1 ? 0x22000000 : 0x55000000)); // Drop shadow
+        g.fillEllipse (cx - r + 1.0f, cy - r + 1.5f, r * 2.0f, r * 2.0f);
+        
+        juce::ColourGradient screwGrad (juce::Colour (0xFFB0B3B8), cx - r, cy - r,
+                                        juce::Colour (0xFF5C5E62), cx + r, cy + r, false);
+        g.setGradientFill (screwGrad);
+        g.fillEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f);
+        
+        g.setColour (juce::Colour (0xFFE2E5E9).withAlpha(0.5f));
+        g.drawEllipse (cx - r, cy - r, r * 2.0f, r * 2.0f, 0.8f);
+        
+        g.setColour (juce::Colour (0xFF1F2124)); // Screwdriver thread
+        g.saveState();
+        float angle = (cx + cy) * 0.13f;
+        g.addTransform (juce::AffineTransform::rotation (angle, cx, cy));
+        g.drawHorizontalLine (static_cast<int>(cy), cx - r + 1.5f, cx + r - 1.5f);
+        g.restoreState();
+    };
+
+    drawScrew (10.0f, 10.0f);
+    drawScrew ((float)getWidth() - 10.0f, 10.0f);
+    drawScrew (10.0f, (float)getHeight() - 10.0f);
+    drawScrew ((float)getWidth() - 10.0f, (float)getHeight() - 10.0f);
+
     g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); 
     g.setColour (t.textDim.withAlpha (0.7f));
-    g.drawText ("Rhythm", 15, 12, 100, 20, juce::Justification::left); 
-    g.drawText ("Generator", getWidth() - 115, 12, 100, 20, juce::Justification::right); 
+    g.drawText ("Rhythm", 18, 12, 100, 20, juce::Justification::left); 
+    g.drawText ("Generator", getWidth() - 118, 12, 100, 20, juce::Justification::right); 
 }
 
 void PluginEditor::resized()
@@ -934,7 +1049,7 @@ void PluginEditor::resized()
         leftTitles[i]->setBounds (row);
     }
     
-    // Mathematically corrected 2x2 grid slicing on Left Sidebar (No overlapping/zero-width clipping) [NEW]
+    // Mathematically corrected 2x2 grid slicing on Left Sidebar (No overlapping/zero-width clipping)
     auto leftTopRow = leftBtnArea.removeFromTop (leftBtnArea.getHeight() / 2);
     auto leftBottomRow = leftBtnArea;
     int leftColWidth = leftTopRow.getWidth() / 2;
@@ -959,7 +1074,7 @@ void PluginEditor::resized()
         rightTitles[i]->setBounds (row);
     }
     
-    // Mathematically corrected 2x2 grid slicing on Right Sidebar (No overlapping/zero-width clipping) [NEW]
+    // Mathematically corrected 2x2 grid slicing on Right Sidebar (No overlapping/zero-width clipping)
     auto rightTopRow = diceArea.removeFromTop (diceArea.getHeight() / 2);
     auto rightBottomRow = diceArea;
     int rightColWidth = rightTopRow.getWidth() / 2;

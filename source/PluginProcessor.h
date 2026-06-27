@@ -172,7 +172,7 @@ private:
     SceneState presets[8];
     bool presetSlotsSaved[8] = { false };
 
-    // Slew smoothing arrays for pop-free transitions [NEW]
+    // Slew smoothing arrays for pop-free transitions
     float currentSlewTarget[24] = { 0.0f };
     float currentSlewValue[24] = { 0.0f };
 
