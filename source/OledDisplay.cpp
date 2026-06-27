@@ -75,4 +75,16 @@ void OledDisplay::paint (juce::Graphics& g)
         juce::Rectangle<int> bar (area.getX() + (i * barWidth) + spacing, area.getBottom() - (stepSegments * 8) - 15, barWidth - (spacing * 2), stepSegments * 8);
         
         bool isPlaying = processor.isCurrentlyPlayingUI.load();
-        for (int seg = 0; s
+        for (int seg = 0; seg < stepSegments; ++seg) {
+            int segY = bar.getBottom() - (seg * 8) - 6;
+            g.setColour ((isPlaying && processor.currentStep == i) ? t.leftAccent : t.leftAccent.withAlpha (0.4f));
+            g.fillRect (bar.getX(), segY, bar.getWidth(), 6);
+        }
+        juce::String stepNumStr = juce::String (i + 1); g.setFont (juce::Font (juce::FontOptions (10.0f)));
+        g.setColour ((isPlaying && processor.currentStep == i) ? juce::Colours::white : juce::Colour (0xFF3A3F4E));
+        g.drawText (stepNumStr, area.getX() + (i * barWidth), area.getBottom() - 12, barWidth, 12, juce::Justification::centred);
+    }
+    juce::Path glint; glint.startNewSubPath (0.0f, 0.0f); glint.lineTo (static_cast<float>(getWidth() * 0.45f), 0.0f); glint.lineTo (0.0f, static_cast<float>(getHeight() * 0.95f)); glint.closeSubPath();
+    juce::ColourGradient gr (juce::Colours::white.withAlpha (0.02f), 0.0f, 0.0f, juce::Colours::white.withAlpha (0.0f), static_cast<float>(getWidth() * 0.3f), static_cast<float>(getHeight() * 0.6f), false);
+    g.setGradientFill (gr); g.fillPath (glint);
+}

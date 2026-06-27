@@ -1,5 +1,5 @@
 #include "ChromaCapsLookAndFeel.h"
-#include "PluginEditor.h" // Full include allowed here to resolve forward declaration
+#include "PluginEditor.h" 
 
 ChromaCapsLookAndFeel::ChromaCapsLookAndFeel (PluginProcessor& p, PluginEditor* e) 
     : processor (p), editor (e)
