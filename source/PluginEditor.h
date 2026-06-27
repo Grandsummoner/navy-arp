@@ -87,7 +87,8 @@ public:
                            float sliderPos, const float rotaryStartAngle, const float rotaryEndAngle, 
                            juce::Slider& slider) override
     {
-        auto bounds = bounds = juce::Rectangle<int> (x, y, width, height).toFloat();
+        // Resolved double-assignment typo on "bounds"
+        auto bounds = juce::Rectangle<int> (x, y, width, height).toFloat();
         auto knobBounds = bounds.reduced (16.0f);
         auto radius = juce::jmin (knobBounds.getWidth(), knobBounds.getHeight()) / 2.0f;
         auto toX = bounds.getCentreX(), toY = bounds.getCentreY();

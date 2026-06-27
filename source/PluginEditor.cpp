@@ -2,7 +2,7 @@
 #include "PluginEditor.h"
 
 // ==============================================================================
-// Custom LookAndFeel Button Painting Implementations [NEW]
+// Custom LookAndFeel Button Painting Implementations
 // ==============================================================================
 void ChromaCapsLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour,
                                                   bool shouldDrawButtonAsHighlighted, bool shouldDrawButtonAsDown)
@@ -429,8 +429,8 @@ void PluginEditor::resized()
     diceNavyButton.setBounds (diceStartX + 78, gridY + 42, 72, 36);
 
     // Dropdowns & Performance Buttons Top Row
-    int dropWidth = (centerWidth * 0.45f) / 3;
-    int perfWidth = (centerWidth * 0.55f) / 4;
+    int dropWidth = static_cast<int> ((centerWidth * 0.45f) / 3);
+    int perfWidth = static_cast<int> ((centerWidth * 0.55f) / 4);
 
     rootKeyBox.setBounds (centerStartX, 15, dropWidth - 5, 24);
     scaleTypeBox.setBounds (centerStartX + dropWidth, 15, dropWidth - 5, 24);
@@ -444,8 +444,8 @@ void PluginEditor::resized()
 
     // Align presets & crossfader perfectly with the sidebar grids, scaling the OLED display
     int oledY = 50;
-    int presetsY = gridY + 6;
-    int crossfaderY = gridY + 48;
+    int presetsY = static_cast<int> (gridY + 6);
+    int crossfaderY = static_cast<int> (gridY + 48);
     int oledHeight = presetsY - oledY - 10; // Dynamic height fills vertical gap on large screens
 
     oledDisplay.setBounds (centerStartX, oledY, centerWidth, oledHeight);
