@@ -6,10 +6,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 {
     addAndMakeVisible (oledDisplay);
 
-    // Register active parameter listener for the Theme switcher [3] 
     processor.apvts.addParameterListener ("panelTheme", this);
 
-    // Bottom faders (Linear Chroma Customization) [5]
+    // Bottom faders
     juce::Slider* faders[] = { &fader1, &fader2, &fader3, &fader4, &fader5, &fader6, &fader7, &fader8 };
     juce::Label* faderLabels[] = { &faderLabel1, &faderLabel2, &faderLabel3, &faderLabel4, &faderLabel5, &faderLabel6, &faderLabel7, &faderLabel8 };
     juce::String scaleNotes[] = { "C", "D", "Eb", "F", "G", "Ab", "Bb", "C" };
@@ -20,11 +19,11 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         faders[i]->setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
         faders[i]->setColour (juce::Slider::thumbColourId, juce::Colour (0xFF00D2FF));
         faders[i]->setColour (juce::Slider::trackColourId, juce::Colour (0xFF181C24));
-        faders[i]->setLookAndFeel (&chromaLookAndFeel); // Attach LookAndFeel to Linear sliders [5]
+        faders[i]->setLookAndFeel (&chromaLookAndFeel); 
         addAndMakeVisible (faders[i]);
 
         faderLabels[i]->setText (scaleNotes[i], juce::dontSendNotification);
-        faderLabels[i]->setFont (juce::Font (juce::FontOptions (14.0f).withStyle ("Bold"))); // Corrected for JUCE 8 [NEW]
+        faderLabels[i]->setFont (juce::Font (juce::FontOptions (14.0f).withStyle ("Bold"))); 
         faderLabels[i]->setJustificationType (juce::Justification::centred);
         faderLabels[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF888888));
         addAndMakeVisible (faderLabels[i]);
@@ -33,7 +32,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     // Left sidebar knobs and Titles
     juce::Slider* leftKnobs[] = { &rhythmMorphKnob, &restKnob, &legatoKnob, &rateKnob };
     juce::Label* leftTitles[] = { &rhythmMorphTitle, &restTitle, &legatoTitle, &rateTitle };
-    juce::String leftNames[] = { "MORPH", "REST", "LEGATO", "RATE" };
+    juce::String leftNames[] = { "Morph", "Rest", "Legato", "Rate" }; 
     juce::String leftPrefixes[] = { "rhythmMorph", "rest", "legato", "rate" };
 
     for (int i = 0; i < 4; ++i)
@@ -43,11 +42,11 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         leftKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFF00D2FF)); 
         leftKnobs[i]->setLookAndFeel (&chromaLookAndFeel); 
         leftKnobs[i]->setComponentID (leftPrefixes[i]); 
-        leftKnobs[i]->addMouseListener (this, false); // Listen for right clicks [5]
+        leftKnobs[i]->addMouseListener (this, false); 
         addAndMakeVisible (leftKnobs[i]);
 
         leftTitles[i]->setText (leftNames[i], juce::dontSendNotification);
-        leftTitles[i]->setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold"))); // Corrected for JUCE 8 [NEW]
+        leftTitles[i]->setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold"))); 
         leftTitles[i]->setJustificationType (juce::Justification::centred);
         leftTitles[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF55555C));
         addAndMakeVisible (leftTitles[i]);
@@ -56,7 +55,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     // Right sidebar knobs and Titles
     juce::Slider* rightKnobs[] = { &entropyKnob, &harmonyKnob, &chaosKnob, &octavesKnob };
     juce::Label* rightTitles[] = { &entropyTitle, &harmonyTitle, &chaosTitle, &octavesTitle };
-    juce::String rightNames[] = { "ENTROPY", "HARMONY", "CHAOS", "OCTAVES" };
+    juce::String rightNames[] = { "Entropy", "Harmony", "Chaos", "Octaves" }; 
     juce::String rightPrefixes[] = { "entropy", "harmony", "chaos", "octaves" };
 
     for (int i = 0; i < 4; ++i)
@@ -66,11 +65,11 @@ PluginEditor::PluginEditor (PluginProcessor& p)
         rightKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFFFFB300)); 
         rightKnobs[i]->setLookAndFeel (&chromaLookAndFeel); 
         rightKnobs[i]->setComponentID (rightPrefixes[i]); 
-        rightKnobs[i]->addMouseListener (this, false); // Listen for right clicks [5]
+        rightKnobs[i]->addMouseListener (this, false); 
         addAndMakeVisible (rightKnobs[i]);
 
         rightTitles[i]->setText (rightNames[i], juce::dontSendNotification);
-        rightTitles[i]->setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold"))); // Corrected for JUCE 8 [NEW]
+        rightTitles[i]->setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold"))); 
         rightTitles[i]->setJustificationType (juce::Justification::centred);
         rightTitles[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF55555C));
         addAndMakeVisible (rightTitles[i]);
@@ -81,84 +80,87 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     morphCrossfader.setTextBoxStyle (juce::Slider::NoTextBox, false, 0, 0);
     morphCrossfader.setColour (juce::Slider::thumbColourId, juce::Colour (0xFFFFFFFF));
     morphCrossfader.setColour (juce::Slider::trackColourId, juce::Colour (0xFF222222));
-    morphCrossfader.setLookAndFeel (&chromaLookAndFeel); // Attach crossfader style [5]
+    morphCrossfader.setLookAndFeel (&chromaLookAndFeel); 
     addAndMakeVisible (morphCrossfader);
 
-    // Latch toggle
+    // Performance Deck Buttons (Symmetrical 4 buttons with Sentence Case)
     addAndMakeVisible (latchButton);
-    latchButton.setButtonText ("LATCH");
+    latchButton.setButtonText ("Latch");
     latchButton.setClickingTogglesState (true);
 
-    // Chords toggle
-    addAndMakeVisible (chordModeButton);
-    chordModeButton.setButtonText ("CHORDS");
-    chordModeButton.setClickingTogglesState (true);
+    addAndMakeVisible (arpSeqButton);
+    arpSeqButton.setButtonText ("SEQ"); // Swapped dynamically in timerCallback
+    arpSeqButton.setClickingTogglesState (true);
 
-    // DICE Buttons with LookAndFeel Vector Drawings
-    addAndMakeVisible (diceMelodyButton);
-    diceMelodyButton.setComponentID ("dice_melody");
-    diceMelodyButton.setButtonText ("MELODY");
-    diceMelodyButton.setLookAndFeel (&chromaLookAndFeel);
-    diceMelodyButton.onClick = [this] { processor.diceMelody(); };
+    addAndMakeVisible (polyButton);
+    polyButton.setButtonText ("Poly");
+    polyButton.setClickingTogglesState (true);
 
-    addAndMakeVisible (diceRhythmButton);
-    diceRhythmButton.setComponentID ("dice_rhythm");
-    diceRhythmButton.setButtonText ("RHYTHM");
-    diceRhythmButton.setLookAndFeel (&chromaLookAndFeel);
-    diceRhythmButton.onClick = [this] { processor.diceRhythm(); };
+    addAndMakeVisible (freezeButton);
+    freezeButton.setButtonText ("Freeze");
+    freezeButton.setClickingTogglesState (true);
 
-    // Symmetrical Scene Buttons initialization (Adjusted to 3 slots) [NEW]
-    for (int i = 0; i < 3; ++i)
-    {
-        addAndMakeVisible (sceneAButtons[i]);
-        sceneAButtons[i].setButtonText ("A" + juce::String (i + 1));
-        sceneAButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
-        sceneAButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF66666A));
-        sceneAButtons[i].addMouseListener (this, false); 
+    // Symmetrical Octatrack Scene Buttons (Just bold "A" and "B" as manual anchor toggles)
+    addAndMakeVisible (sceneAButton);
+    sceneAButton.setButtonText ("A");
+    sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
+    sceneAButton.addMouseListener (this, false); 
 
-        addAndMakeVisible (sceneBButtons[i]);
-        sceneBButtons[i].setButtonText ("B" + juce::String (i + 1));
-        sceneBButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
-        sceneBButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF66666A));
-        sceneBButtons[i].addMouseListener (this, false); 
-    }
+    addAndMakeVisible (sceneBButton);
+    sceneBButton.setButtonText ("B");
+    sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF151515));
+    sceneBButton.addMouseListener (this, false); 
 
-    addAndMakeVisible (diceSceneAButton);
-    diceSceneAButton.setComponentID ("dice_scene_a");
-    diceSceneAButton.setButtonText (""); // Vector icon drawn in LookAndFeel
-    diceSceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
-    diceSceneAButton.setLookAndFeel (&chromaLookAndFeel);
-    diceSceneAButton.onClick = [this] { processor.diceActiveSceneA(); }; 
-
-    addAndMakeVisible (diceSceneBButton);
-    diceSceneBButton.setComponentID ("dice_scene_b");
-    diceSceneBButton.setButtonText (""); // Vector icon drawn in LookAndFeel
-    diceSceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
-    diceSceneBButton.setLookAndFeel (&chromaLookAndFeel);
-    diceSceneBButton.onClick = [this] { processor.diceActiveSceneB(); }; // Direct B-routing [NEW]
-
-    // Save & Recall utility toggles (Left-sidebar bottom placement) [5]
+    // Left-Hand 2x2 Utility Grid (Sentence Case, no shouting)
     addAndMakeVisible (saveButton);
-    saveButton.setButtonText ("SAVE");
+    saveButton.setButtonText ("Save");
     saveButton.setClickingTogglesState (true);
-    saveButton.addMouseListener (this, false); // Listen for master long-press
-    saveButton.onClick = [this] {
-        if (saveButton.getToggleState()) {
-            recallButton.setToggleState (false, juce::dontSendNotification);
-        }
-    };
+    saveButton.addMouseListener (this, false); 
+    saveButton.onClick = [this] { if (saveButton.getToggleState()) recallButton.setToggleState (false, juce::dontSendNotification); };
 
     addAndMakeVisible (recallButton);
-    recallButton.setButtonText ("RECALL");
+    recallButton.setButtonText ("Recall");
     recallButton.setClickingTogglesState (true);
-    recallButton.setToggleState (false, juce::dontSendNotification); // OFF by default [NEW]
-    recallButton.onClick = [this] {
-        if (recallButton.getToggleState()) {
-            saveButton.setToggleState (false, juce::dontSendNotification);
-        }
-    };
+    recallButton.setToggleState (false, juce::dontSendNotification); 
+    recallButton.addMouseListener (this, false);
+    recallButton.onClick = [this] { if (recallButton.getToggleState()) saveButton.setToggleState (false, juce::dontSendNotification); };
 
-    // 8 Preset Slots with Custom Mouse Listener bindings (No instant onClick actions) [NEW]
+    addAndMakeVisible (copyButton);
+    copyButton.setButtonText ("Copy");
+    copyButton.setClickingTogglesState (true);
+    copyButton.addMouseListener (this, false);
+
+    addAndMakeVisible (initButton);
+    initButton.setButtonText ("Init");
+    initButton.setClickingTogglesState (true);
+    initButton.addMouseListener (this, false);
+
+    // Right-Hand 2x2 Dice Buttons (Melo, Arti, Time, Navy)
+    addAndMakeVisible (diceMeloButton);
+    diceMeloButton.setComponentID ("dice_melody");
+    diceMeloButton.setButtonText ("Melo");
+    diceMeloButton.setLookAndFeel (&chromaLookAndFeel);
+    diceMeloButton.onClick = [this] { processor.diceMelody(); };
+
+    addAndMakeVisible (diceArtiButton);
+    diceArtiButton.setComponentID ("dice_articulation");
+    diceArtiButton.setButtonText ("Arti");
+    diceArtiButton.setLookAndFeel (&chromaLookAndFeel);
+    diceArtiButton.onClick = [this] { processor.diceArticulation(); };
+
+    addAndMakeVisible (diceTimeButton);
+    diceTimeButton.setComponentID ("dice_time");
+    diceTimeButton.setButtonText ("Time");
+    diceTimeButton.setLookAndFeel (&chromaLookAndFeel);
+    diceTimeButton.onClick = [this] { processor.diceTime(); };
+
+    addAndMakeVisible (diceNavyButton);
+    diceNavyButton.setComponentID ("dice_navy");
+    diceNavyButton.setButtonText ("Navy");
+    diceNavyButton.setLookAndFeel (&chromaLookAndFeel);
+    diceNavyButton.onClick = [this] { processor.diceNavy(); };
+
+    // 8 Preset Slots with Custom Mouse Listener bindings (No instant onClick actions)
     for (int i = 0; i < 8; ++i)
     {
         addAndMakeVisible (presetButtons[i]);
@@ -199,7 +201,9 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     morphAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment> (processor.apvts, IDs::morph.getParamID(), morphCrossfader);
     latchAttachment       = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::latch.getParamID(), latchButton);
-    chordModeAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::chordMode.getParamID(), chordModeButton);
+    arpSeqAttachment      = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::arpSeq.getParamID(), arpSeqButton);
+    polyAttachment        = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::poly.getParamID(), polyButton);
+    freezeAttachment      = std::make_unique<juce::AudioProcessorValueTreeState::ButtonAttachment> (processor.apvts, IDs::freeze.getParamID(), freezeButton);
 
     rootKeyAttachment     = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processor.apvts, IDs::rootKey.getParamID(), rootKeyBox);
     scaleTypeAttachment   = std::make_unique<juce::AudioProcessorValueTreeState::ComboBoxAttachment> (processor.apvts, IDs::scaleType.getParamID(), scaleTypeBox);
@@ -216,10 +220,8 @@ PluginEditor::~PluginEditor()
 { 
     stopTimer(); 
 
-    // Unregister the Parameter Listener [3]
     processor.apvts.removeParameterListener ("panelTheme", this);
     
-    // Safety unregister custom LookAndFeel references on all rotary knobs [5]
     rhythmMorphKnob.setLookAndFeel (nullptr);
     restKnob.setLookAndFeel (nullptr);
     legatoKnob.setLookAndFeel (nullptr);
@@ -230,7 +232,6 @@ PluginEditor::~PluginEditor()
     chaosKnob.setLookAndFeel (nullptr);
     octavesKnob.setLookAndFeel (nullptr);
 
-    // Safety unregister custom LookAndFeel references on all bottom linear faders [5]
     fader1.setLookAndFeel (nullptr);
     fader2.setLookAndFeel (nullptr);
     fader3.setLookAndFeel (nullptr);
@@ -241,15 +242,15 @@ PluginEditor::~PluginEditor()
     fader8.setLookAndFeel (nullptr);
     morphCrossfader.setLookAndFeel (nullptr);
 
-    diceMelodyButton.setLookAndFeel (nullptr);
-    diceRhythmButton.setLookAndFeel (nullptr);
-    diceSceneAButton.setLookAndFeel (nullptr);
-    diceSceneBButton.setLookAndFeel (nullptr);
+    diceMeloButton.setLookAndFeel (nullptr);
+    diceArtiButton.setLookAndFeel (nullptr);
+    diceTimeButton.setLookAndFeel (nullptr);
+    diceNavyButton.setLookAndFeel (nullptr);
 
-    diceMelodyButton.onClick = nullptr;
-    diceRhythmButton.onClick = nullptr;
-    diceSceneAButton.onClick = nullptr;
-    diceSceneBButton.onClick = nullptr;
+    diceMeloButton.onClick = nullptr;
+    diceArtiButton.onClick = nullptr;
+    diceTimeButton.onClick = nullptr;
+    diceNavyButton.onClick = nullptr;
 
     for (int i = 0; i < 8; ++i)
     {
@@ -258,22 +259,16 @@ PluginEditor::~PluginEditor()
         presetButtons[i].removeMouseListener(this); 
     }
 
-    for (int i = 0; i < 3; ++i)
-    {
-        sceneAButtons[i].removeMouseListener (this);
-        sceneBButtons[i].removeMouseListener (this);
-    }
+    sceneAButton.removeMouseListener (this);
+    sceneBButton.removeMouseListener (this);
 }
 
-// Thread-safe async Parameter Listener callback to trigger immediate UI redraw [3]
 void PluginEditor::parameterChanged (const juce::String& parameterID, float newValue)
 {
     juce::ignoreUnused (newValue);
     
     if (parameterID == "panelTheme")
     {
-        // DAW automation can trigger parameter updates on the audio thread.
-        // We must push the repaint commands safely onto the Main GUI Message Thread. [3]
         juce::MessageManager::callAsync ([this]() {
             repaint();
             oledDisplay.repaint();
@@ -285,10 +280,8 @@ void PluginEditor::parameterChanged (const juce::String& parameterID, float newV
             entropyKnob.repaint(); harmonyKnob.repaint(); chaosKnob.repaint(); octavesKnob.repaint();
             morphCrossfader.repaint();
 
-            for (int i = 0; i < 3; ++i) {
-                sceneAButtons[i].repaint();
-                sceneBButtons[i].repaint();
-            }
+            sceneAButton.repaint();
+            sceneBButton.repaint();
             saveButton.repaint();
             recallButton.repaint();
         });
@@ -297,7 +290,9 @@ void PluginEditor::parameterChanged (const juce::String& parameterID, float newV
 
 void PluginEditor::mouseDown (const juce::MouseEvent& event)
 {
-    // 1. Preset Slot Interactions [NEW]
+    int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
+
+    // 1. Preset Slot Interactions (Recall is instant-tap with auto-reset, Save is hold-to-save)
     for (int i = 0; i < 8; ++i)
     {
         if (event.eventComponent == &presetButtons[i])
@@ -313,7 +308,6 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
                 presetFlashTimer[i] = 24; 
                 presetFlashType[i] = 2; // Cyan flash
                 
-                // Auto-toggle RECALL to OFF immediately after load
                 recallButton.setToggleState (false, juce::dontSendNotification);
             }
             else // Neither is armed -> fallback to right-click safety save
@@ -328,14 +322,29 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
         }
     }
 
-    // 2. Master SAVE Button long-press arming [NEW]
+    // 2. Left-hand 2x2 Utility long-press armings
     if (event.eventComponent == &saveButton)
     {
         savePressStartTime = juce::Time::getMillisecondCounter();
         saveAlreadySaved = false;
     }
+    else if (event.eventComponent == &recallButton)
+    {
+        recallPressStartTime = juce::Time::getMillisecondCounter();
+        recallAlreadySaved = false;
+    }
+    else if (event.eventComponent == &copyButton)
+    {
+        copyPressStartTime = juce::Time::getMillisecondCounter();
+        copyAlreadySaved = false;
+    }
+    else if (event.eventComponent == &initButton)
+    {
+        initPressStartTime = juce::Time::getMillisecondCounter();
+        initAlreadySaved = false;
+    }
 
-    // 3. Right-Click LFO Modulation Menu Popup [NEW]
+    // 3. Right-Click LFO Modulation Menu Popup
     if (event.mods.isRightButtonDown() && event.eventComponent != this)
     {
         juce::Slider* clickedSlider = nullptr;
@@ -423,25 +432,28 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
         });
     }
 
-    // 5. Capture press start times for real-time hold-to-save scene logic
-    for (int i = 0; i < 3; ++i)
+    // 5. Active Anchor selection and holds (Tapping targets manual edit focus, holding saves)
+    if (event.eventComponent == &sceneAButton)
     {
-        if (event.eventComponent == &sceneAButtons[i])
-        {
-            sceneAPressStartTime[i] = juce::Time::getMillisecondCounter();
-            sceneAAlreadySaved[i] = false;
-        }
-        else if (event.eventComponent == &sceneBButtons[i])
-        {
-            sceneBPressStartTime[i] = juce::Time::getMillisecondCounter();
-            sceneBAlreadySaved[i] = false;
-        }
+        sceneAPressStartTime = juce::Time::getMillisecondCounter();
+        sceneAAlreadySaved = false;
+        
+        // Manual Focus selection override
+        processor.isSceneBActiveAnchor.store (false); 
+    }
+    else if (event.eventComponent == &sceneBButton)
+    {
+        sceneBPressStartTime = juce::Time::getMillisecondCounter();
+        sceneBAlreadySaved = false;
+        
+        // Manual Focus selection override
+        processor.isSceneBActiveAnchor.store (true); 
     }
 }
 
 void PluginEditor::mouseUp (const juce::MouseEvent& event)
 {
-    // 1. Preset Slot Reset [NEW]
+    // 1. Preset Slot Reset
     for (int i = 0; i < 8; ++i)
     {
         if (event.eventComponent == &presetButtons[i])
@@ -451,113 +463,41 @@ void PluginEditor::mouseUp (const juce::MouseEvent& event)
         }
     }
 
-    // 2. Master SAVE Button Reset [NEW]
-    if (event.eventComponent == &saveButton)
-    {
-        savePressStartTime = 0;
-        saveAlreadySaved = false;
-    }
+    // 2. Master Utility Reset
+    if (event.eventComponent == &saveButton) { savePressStartTime = 0; saveAlreadySaved = false; }
+    else if (event.eventComponent == &recallButton) { recallPressStartTime = 0; recallAlreadySaved = false; }
+    else if (event.eventComponent == &copyButton) { copyPressStartTime = 0; copyAlreadySaved = false; }
+    else if (event.eventComponent == &initButton) { initPressStartTime = 0; initAlreadySaved = false; }
 
     // 3. Real-Time Release Latching Logic for Scenes
-    for (int i = 0; i < 3; ++i)
+    if (event.eventComponent == &sceneAButton)
     {
-        if (event.eventComponent == &sceneAButtons[i])
-        {
-            bool wasSaved = sceneAAlreadySaved[i];
-            sceneAPressStartTime[i] = 0; 
-            sceneAAlreadySaved[i] = false; 
-            
-            if (! wasSaved) 
-            {
-                if (processor.activeSceneAIndex.load() == i && processor.isSceneASaved(i))
-                {
-                    processor.loadSceneA (i);
-                }
-                else
-                {
-                    processor.activeSceneAIndex.store (i);
-                    processor.loadSceneA (i);
-                }
-            }
-        }
-        else if (event.eventComponent == &sceneBButtons[i])
-        {
-            bool wasSaved = sceneBAlreadySaved[i];
-            sceneBPressStartTime[i] = 0; 
-            sceneBAlreadySaved[i] = false; 
-            
-            if (! wasSaved) 
-            {
-                if (processor.activeSceneBIndex.load() == i && processor.isSceneBSaved(i))
-                {
-                    processor.loadSceneB (i);
-                }
-                else
-                {
-                    processor.activeSceneBIndex.store (i);
-                    processor.loadSceneB (i);
-                }
-            }
-        }
+        sceneAPressStartTime = 0;
+        sceneAAlreadySaved = false;
+    }
+    else if (event.eventComponent == &sceneBButton)
+    {
+        sceneBPressStartTime = 0;
+        sceneBAlreadySaved = false;
     }
 }
 
 void PluginEditor::timerCallback()
 {
     float morphValue = morphCrossfader.getValue();
-    int currentActiveA = processor.activeSceneAIndex.load(); 
-    int currentActiveB = processor.activeSceneBIndex.load(); 
-
-    // Motorized Parameter Gliding: pull morphs from dynamic 3-slot presets [NEW]
-    if (processor.isSceneASaved (currentActiveA) && processor.isSceneBSaved (currentActiveB) && morphCrossfader.isMouseButtonDown())
-    {
-        for (int i = 0; i < 8; ++i)
-        {
-            float targetValue = (processor.sceneAPresets[currentActiveA].faders[i] * (1.0f - morphValue)) + (processor.sceneBPresets[currentActiveB].faders[i] * morphValue);
-            processor.apvts.getParameter (juce::String ("fader" + juce::String (i + 1)))->setValueNotifyingHost (targetValue);
-        }
-
-        processor.apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost ((processor.sceneAPresets[currentActiveA].rhythmMorph * (1.0f - morphValue)) + (processor.sceneBPresets[currentActiveB].rhythmMorph * morphValue));
-        processor.apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost ((processor.sceneAPresets[currentActiveA].rest * (1.0f - morphValue)) + (processor.sceneBPresets[currentActiveB].rest * morphValue));
-        processor.apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost ((processor.sceneAPresets[currentActiveA].legato * (1.0f - morphValue)) + (processor.sceneBPresets[currentActiveB].legato * morphValue));
-        
-        processor.apvts.getParameter (IDs::entropy.getParamID())->setValueNotifyingHost (((processor.sceneAPresets[currentActiveA].entropy + 1.0f) * 0.5f * (1.0f - morphValue)) + ((processor.sceneBPresets[currentActiveB].entropy + 1.0f) * 0.5f * morphValue));
-        processor.apvts.getParameter (IDs::harmony.getParamID())->setValueNotifyingHost ((processor.sceneAPresets[currentActiveA].harmony * (1.0f - morphValue)) + (processor.sceneBPresets[currentActiveB].harmony * morphValue));
-        processor.apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost ((processor.sceneAPresets[currentActiveA].chaos * (1.0f - morphValue)) + (processor.sceneBPresets[currentActiveB].chaos * morphValue));
-        
-        processor.apvts.getParameter (IDs::rate.getParamID())->setValueNotifyingHost (((processor.sceneAPresets[currentActiveA].rate / 3.0f) * (1.0f - morphValue)) + ((processor.sceneBPresets[currentActiveB].rate / 3.0f) * morphValue));
-        processor.apvts.getParameter (IDs::octaves.getParamID())->setValueNotifyingHost (((processor.sceneAPresets[currentActiveA].octaves + 2.0f) / 5.0f * (1.0f - morphValue)) + ((processor.sceneBPresets[currentActiveB].octaves + 2.0f) / 5.0f * morphValue));
-    }
-
-    // Dynamic Fader Labels updating to show current scale notes based on selected Key/Scale
-    int activeKey = rootKeyBox.getSelectedItemIndex();
-    int activeScale = scaleTypeBox.getSelectedItemIndex();
-    
-    std::vector<int> offsets = { 0, 2, 4, 5, 7, 9, 11, 12 }; // Major
-    if (activeScale == 1)      offsets = { 0, 2, 3, 5, 7, 8, 10, 12 }; // Minor
-    else if (activeScale == 2) offsets = { 0, 3, 5, 7, 10, 12, 15, 17 }; // Pentatonic Minor
-    else if (activeScale == 3) offsets = { 0, 2, 4, 7, 9, 12, 14, 16 };  // Pentatonic Major
-    else if (activeScale == 4) offsets = { 0, 2, 3, 5, 7, 9, 10, 12 };  // Dorian
-    else if (activeScale == 5) offsets = { 0, 1, 3, 5, 7, 8, 10, 12 };  // Phrygian
-    else if (activeScale == 6) offsets = { 0, 2, 4, 6, 7, 9, 11, 12 };  // Lydian
-    else if (activeScale == 7) offsets = { 0, 2, 4, 5, 7, 9, 10, 12 };  // Mixolydian
-    else if (activeScale == 8) offsets = { 0, 2, 3, 5, 7, 8, 11, 12 };  // Harmonic Minor
-    else if (activeScale == 9) offsets = { 0, 2, 3, 5, 7, 9, 11, 12 };  // Melodic Minor
-
-    juce::String chromaticNotes[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B" };
-    juce::Label* faderLabels[] = { &faderLabel1, &faderLabel2, &faderLabel3, &faderLabel4, &faderLabel5, &faderLabel6, &faderLabel7, &faderLabel8 };
-
-    for (int i = 0; i < 8; ++i)
-    {
-        int noteIndex = (activeKey + offsets[i]) % 12;
-        faderLabels[i]->setText (chromaticNotes[noteIndex], juce::dontSendNotification);
-    }
-
-    // Update dynamically themed colors in real-time across auxiliary labels and buttons
     int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
     auto t = AppTheme::get (themeIdx);
 
-    // Apply color-coded theme updates on labels
+    // Dynamic SEQ/ARP Toggle text updates
+    arpSeqButton.setButtonText (arpSeqButton.getToggleState() ? "ARP" : "SEQ");
+
+    // Dynamic Active Anchor Focus updating based on Crossfader position
+    if (! morphCrossfader.isMouseButtonDown())
+    {
+        processor.isSceneBActiveAnchor.store (morphValue > 0.5f);
+    }
+
+    // Apply dynamic panel theme color-coded updates on labels
     rhythmMorphTitle.setColour (juce::Label::textColourId, t.textDim);
     restTitle.setColour (juce::Label::textColourId, t.textDim);
     legatoTitle.setColour (juce::Label::textColourId, t.textDim);
@@ -602,16 +542,32 @@ void PluginEditor::timerCallback()
         latchButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
         latchButton.setColour (juce::TextButton::textColourOffId, t.leftAccent);
 
-        chordModeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
-        chordModeButton.setColour (juce::TextButton::buttonOnColourId, t.rightAccent);
-        chordModeButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
-        chordModeButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+        arpSeqButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        arpSeqButton.setColour (juce::TextButton::buttonOnColourId, t.leftAccent);
+        arpSeqButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+        arpSeqButton.setColour (juce::TextButton::textColourOffId, t.leftAccent);
 
-        diceMelodyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
-        diceMelodyButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+        polyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        polyButton.setColour (juce::TextButton::buttonOnColourId, t.rightAccent);
+        polyButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+        polyButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        freezeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        freezeButton.setColour (juce::TextButton::buttonOnColourId, t.rightAccent);
+        freezeButton.setColour (juce::TextButton::textColourOnId, juce::Colours::white);
+        freezeButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceMeloButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        diceMeloButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
         
-        diceRhythmButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
-        diceRhythmButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+        diceArtiButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        diceArtiButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceTimeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        diceTimeButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceNavyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFD4D1C9));
+        diceNavyButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
     }
     else // Dark Themes
     {
@@ -620,19 +576,35 @@ void PluginEditor::timerCallback()
         latchButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
         latchButton.setColour (juce::TextButton::textColourOffId, t.leftAccent);
 
-        chordModeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF141416));
-        chordModeButton.setColour (juce::TextButton::buttonOnColourId, t.rightAccent);
-        chordModeButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
-        chordModeButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+        arpSeqButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF112233));
+        arpSeqButton.setColour (juce::TextButton::buttonOnColourId, t.leftAccent);
+        arpSeqButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
+        arpSeqButton.setColour (juce::TextButton::textColourOffId, t.leftAccent);
 
-        diceMelodyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
-        diceMelodyButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+        polyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF141416));
+        polyButton.setColour (juce::TextButton::buttonOnColourId, t.rightAccent);
+        polyButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
+        polyButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
 
-        diceRhythmButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
-        diceRhythmButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+        freezeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF141416));
+        freezeButton.setColour (juce::TextButton::buttonOnColourId, t.rightAccent);
+        freezeButton.setColour (juce::TextButton::textColourOnId, juce::Colour (0xFF000000));
+        freezeButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceMeloButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
+        diceMeloButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceArtiButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
+        diceArtiButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceTimeButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
+        diceTimeButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
+
+        diceNavyButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF221100));
+        diceNavyButton.setColour (juce::TextButton::textColourOffId, t.rightAccent);
     }
 
-    // Dynamic Save/Recall Button Contrast Calibration
+    // Dynamic Save/Recall/Copy/Init Button Contrast Calibration
     juce::Colour unselectedBtnCol = (themeIdx == 1) ? juce::Colour (0xFFD4D1C9) : juce::Colour (0xFF151518);
     juce::Colour saveActiveCol = t.rightAccent; 
     juce::Colour recallActiveCol = t.leftAccent; 
@@ -645,7 +617,15 @@ void PluginEditor::timerCallback()
     recallButton.setColour (juce::TextButton::textColourOnId, (themeIdx == 1) ? juce::Colours::white : juce::Colours::black);
     recallButton.setColour (juce::TextButton::textColourOffId, recallActiveCol);
 
-    // Master Save Button Long-Press Detection & Flash Sequence [NEW]
+    copyButton.setColour (juce::TextButton::buttonOnColourId, saveActiveCol);
+    copyButton.setColour (juce::TextButton::textColourOnId, (themeIdx == 1) ? juce::Colours::white : juce::Colours::black);
+    copyButton.setColour (juce::TextButton::textColourOffId, saveActiveCol);
+
+    initButton.setColour (juce::TextButton::buttonOnColourId, saveActiveCol);
+    initButton.setColour (juce::TextButton::textColourOnId, (themeIdx == 1) ? juce::Colours::white : juce::Colours::black);
+    initButton.setColour (juce::TextButton::textColourOffId, saveActiveCol);
+
+    // Master Save Button Long-Press Detection & Flash Sequence
     if (savePressStartTime > 0 && ! saveAlreadySaved)
     {
         auto elapsed = juce::Time::getMillisecondCounter() - savePressStartTime;
@@ -656,7 +636,7 @@ void PluginEditor::timerCallback()
             {
                 processor.savePreset (activePreset);
             }
-            saveFlashTimer = 24; // 800ms triple flash
+            saveFlashTimer = 24; 
             saveAlreadySaved = true;
             saveButton.setToggleState (false, juce::dontSendNotification);
         }
@@ -693,7 +673,17 @@ void PluginEditor::timerCallback()
     else
         recallButton.setColour (juce::TextButton::buttonColourId, unselectedBtnCol);
 
-    // Preset Slot Hold-to-Save polling loops [NEW]
+    if (copyButton.getToggleState())
+        copyButton.setColour (juce::TextButton::buttonColourId, saveActiveCol);
+    else
+        copyButton.setColour (juce::TextButton::buttonColourId, unselectedBtnCol);
+
+    if (initButton.getToggleState())
+        initButton.setColour (juce::TextButton::buttonColourId, saveActiveCol);
+    else
+        initButton.setColour (juce::TextButton::buttonColourId, unselectedBtnCol);
+
+    // Preset Slot Hold-to-Save polling loops
     for (int i = 0; i < 8; ++i)
     {
         if (presetPressStartTime[i] > 0 && ! presetAlreadySaved[i])
@@ -706,125 +696,114 @@ void PluginEditor::timerCallback()
                 presetFlashType[i] = 1; // Amber
                 presetAlreadySaved[i] = true;
                 
-                // Auto-toggle SAVE to OFF
                 saveButton.setToggleState (false, juce::dontSendNotification);
             }
         }
     }
 
-    // Symmetrical Real-Time Save-while-held Scene Detection (Adjusted to 3 slots)
-    for (int i = 0; i < 3; ++i)
+    // Symmetrical Real-Time Save-while-held Scene Detection
+    if (sceneAPressStartTime > 0 && ! sceneAAlreadySaved)
     {
-        if (sceneAPressStartTime[i] > 0 && ! sceneAAlreadySaved[i])
+        auto elapsed = juce::Time::getMillisecondCounter() - sceneAPressStartTime;
+        if (elapsed >= 1000)
         {
-            auto elapsed = juce::Time::getMillisecondCounter() - sceneAPressStartTime[i];
-            if (elapsed >= 1000)
-            {
-                processor.saveSceneA (i);
-                sceneAFlashTimer[i] = 24; // Start 24-frame triple flash (800ms)
-                sceneAAlreadySaved[i] = true;
-                saveButton.setToggleState (false, juce::dontSendNotification);
-                recallButton.setToggleState (true, juce::dontSendNotification);
-            }
+            processor.saveSceneA();
+            sceneAFlashTimer = 24; // Start 24-frame triple flash (800ms)
+            sceneAAlreadySaved = true;
+            saveButton.setToggleState (false, juce::dontSendNotification);
+            recallButton.setToggleState (true, juce::dontSendNotification);
         }
-        if (sceneBPressStartTime[i] > 0 && ! sceneBAlreadySaved[i])
+    }
+    if (sceneBPressStartTime > 0 && ! sceneBAlreadySaved)
+    {
+        auto elapsed = juce::Time::getMillisecondCounter() - sceneBPressStartTime;
+        if (elapsed >= 1000)
         {
-            auto elapsed = juce::Time::getMillisecondCounter() - sceneBPressStartTime[i];
-            if (elapsed >= 1000)
-            {
-                processor.saveSceneB (i);
-                sceneBFlashTimer[i] = 24; // Start 24-frame triple flash (800ms)
-                sceneBAlreadySaved[i] = true;
-                saveButton.setToggleState (false, juce::dontSendNotification);
-                recallButton.setToggleState (true, juce::dontSendNotification);
-            }
+            processor.saveSceneB();
+            sceneBFlashTimer = 24; // Start 24-frame triple flash (800ms)
+            sceneBAlreadySaved = true;
+            saveButton.setToggleState (false, juce::dontSendNotification);
+            recallButton.setToggleState (true, juce::dontSendNotification);
         }
     }
 
-    // Dynamic Solid Contrast text color calibration [NEW]
+    // Dynamic Solid Contrast text color calibration
     juce::Colour textCol = (themeIdx == 1) ? juce::Colour (0xFF1A1A18) : juce::Colours::white;
 
-    // Symmetrical Scene LEDs with Real-Time Crossfade Power Shifting (3 slots)
-    for (int i = 0; i < 3; ++i)
-    {
-        // Scene A Colors (Pastel Green Saved, Dynamic LED brightness on Active)
-        if (sceneAFlashTimer[i] > 0) // Amber Write Flash
-        {
-            sceneAFlashTimer[i]--;
-            int pulseIndex = sceneAFlashTimer[i] / 4;
-            bool flashOn = (pulseIndex % 2 == 1);
-            
-            if (flashOn)
-            {
-                sceneAButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFAA00));
-                sceneAButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF000000));
-            }
-            else
-            {
-                sceneAButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-                sceneAButtons[i].setColour (juce::TextButton::textColourOffId, t.unlitLed);
-            }
-        }
-        else if (currentActiveA == i) // Active (Intensity proportional to fader position)
-        {
-            float intensity = 1.0f - morphValue;
-            float displayVal = juce::jlimit (0.15f, 1.0f, intensity); // Maintain base glow
-            juce::Colour greenLED = juce::Colour (0xFF00FF66);
-            
-            sceneAButtons[i].setColour (juce::TextButton::buttonColourId, greenLED.withAlpha (displayVal * 0.8f));
-            sceneAButtons[i].setColour (juce::TextButton::textColourOffId, textCol.withAlpha (themeIdx == 1 ? 1.0f : displayVal)); // Solid text in light theme
-        }
-        else if (processor.isSceneASaved (i)) // Saved Inactive (Pastel Green)
-        {
-            sceneAButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A2F25));
-            sceneAButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF4CFF99));
-        }
-        else // Empty Unsaved
-        {
-            sceneAButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-            sceneAButtons[i].setColour (juce::TextButton::textColourOffId, t.unlitLed);
-        }
+    // Symmetrical Scene LEDs with Real-Time Crossfade Power Shifting
+    bool focusB = processor.isSceneBActiveAnchor.load();
 
-        // Scene B Colors (Pastel Blue Saved, Dynamic LED brightness on Active)
-        if (sceneBFlashTimer[i] > 0) // Amber Write Flash
+    // Scene A Colors (Pastel Green Saved, Dynamic LED brightness on Active)
+    if (sceneAFlashTimer > 0) // Amber Write Flash
+    {
+        sceneAFlashTimer--;
+        int pulseIndex = sceneAFlashTimer / 4;
+        bool flashOn = (pulseIndex % 2 == 1);
+        
+        if (flashOn)
         {
-            sceneBFlashTimer[i]--;
-            int pulseIndex = sceneBFlashTimer[i] / 4;
-            bool flashOn = (pulseIndex % 2 == 1);
-            
-            if (flashOn)
-            {
-                sceneBButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFAA00));
-                sceneBButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF000000));
-            }
-            else
-            {
-                sceneBButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-                sceneBButtons[i].setColour (juce::TextButton::textColourOffId, t.unlitLed);
-            }
+            sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFAA00));
+            sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF000000));
         }
-        else if (currentActiveB == i) // Active (Intensity proportional to fader position)
+        else
         {
-            float intensity = morphValue;
-            float displayVal = juce::jlimit (0.15f, 1.0f, intensity); // Maintain base glow
-            juce::Colour blueLED = juce::Colour (0xFF00D2FF);
-            
-            sceneBButtons[i].setColour (juce::TextButton::buttonColourId, blueLED.withAlpha (displayVal * 0.8f));
-            sceneBButtons[i].setColour (juce::TextButton::textColourOffId, textCol.withAlpha (themeIdx == 1 ? 1.0f : displayVal)); // Solid text in light theme
-        }
-        else if (processor.isSceneBSaved (i)) // Saved Inactive (Pastel Blue)
-        {
-            sceneBButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A2B3D));
-            sceneBButtons[i].setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF4CCFFF));
-        }
-        else // Empty Unsaved
-        {
-            sceneBButtons[i].setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
-            sceneBButtons[i].setColour (juce::TextButton::textColourOffId, t.unlitLed);
+            sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
+            sceneAButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
         }
     }
+    else if (! focusB) // Active (Intensity proportional to focus)
+    {
+        juce::Colour greenLED = juce::Colour (0xFF00FF66);
+        sceneAButton.setColour (juce::TextButton::buttonColourId, greenLED);
+        sceneAButton.setColour (juce::TextButton::textColourOffId, textCol); 
+    }
+    else if (processor.hasSceneA) // Saved Inactive (Pastel Green)
+    {
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A2F25));
+        sceneAButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF4CFF99));
+    }
+    else // Empty Unsaved
+    {
+        sceneAButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
+        sceneAButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+    }
 
-    // Dynamic preset saved status and flash glow [NEW]
+    // Scene B Colors (Pastel Blue Saved, Dynamic LED brightness on Active)
+    if (sceneBFlashTimer > 0) // Amber Write Flash
+    {
+        sceneBFlashTimer--;
+        int pulseIndex = sceneBFlashTimer / 4;
+        bool flashOn = (pulseIndex % 2 == 1);
+        
+        if (flashOn)
+        {
+            sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFFFFAA00));
+            sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF000000));
+        }
+        else
+        {
+            sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
+            sceneBButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+        }
+    }
+    else if (focusB) // Active (Intensity proportional to focus)
+    {
+        juce::Colour blueLED = juce::Colour (0xFF00D2FF);
+        sceneBButton.setColour (juce::TextButton::buttonColourId, blueLED);
+        sceneBButton.setColour (juce::TextButton::textColourOffId, textCol); 
+    }
+    else if (processor.hasSceneB) // Saved Inactive (Pastel Blue)
+    {
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF1A2B3D));
+        sceneBButton.setColour (juce::TextButton::textColourOffId, juce::Colour (0xFF4CCFFF));
+    }
+    else // Empty Unsaved
+    {
+        sceneBButton.setColour (juce::TextButton::buttonColourId, juce::Colour (0xFF101012));
+        sceneBButton.setColour (juce::TextButton::textColourOffId, t.unlitLed);
+    }
+
+    // Dynamic preset saved status and flash glow
     for (int i = 0; i < 8; ++i)
     {
         if (presetFlashTimer[i] > 0)
@@ -847,7 +826,7 @@ void PluginEditor::timerCallback()
         }
         else if (processor.isPresetSaved (i))
         {
-            presetButtons[i].setColour (juce::TextButton::buttonColourId, t.leftAccent.withAlpha(0.22f));
+            presetButtons[i].setColour (juce::TextButton::buttonColourId, t.leftAccent.withAlpha (0.22f));
             presetButtons[i].setColour (juce::TextButton::textColourOffId, t.leftAccent);
         }
         else
@@ -857,7 +836,6 @@ void PluginEditor::timerCallback()
         }
     }
 
-    // Force-repaint the 8 rotary knobs at 30Hz so the LFO visual "breathing" is smooth [CRITICAL FIX]
     rhythmMorphKnob.repaint();
     restKnob.repaint();
     legatoKnob.repaint();
@@ -870,7 +848,6 @@ void PluginEditor::timerCallback()
 
 void PluginEditor::paint (juce::Graphics& g)
 {
-    // Retrieve dynamic panel theme background
     int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
     auto t = AppTheme::get (themeIdx);
 
@@ -879,10 +856,10 @@ void PluginEditor::paint (juce::Graphics& g)
     g.drawRect (getLocalBounds().toFloat(), 3.0f);
     g.drawHorizontalLine (getHeight() - static_cast<int>(getHeight() * 0.22f), 15.0f, getWidth() - 15.0f);
 
-    g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); // Corrected FontOptions syntax [NEW]
+    g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); 
     g.setColour (t.textDim.withAlpha (0.7f));
-    g.drawText ("RHYTHM", 15, 12, 100, 20, juce::Justification::left);
-    g.drawText ("GENERATOR", getWidth() - 115, 12, 100, 20, juce::Justification::right);
+    g.drawText ("Rhythm", 15, 12, 100, 20, juce::Justification::left); 
+    g.drawText ("Generator", getWidth() - 115, 12, 100, 20, juce::Justification::right); 
 }
 
 void PluginEditor::resized()
@@ -891,10 +868,9 @@ void PluginEditor::resized()
     int totalWidth = getWidth();
     int totalHeight = getHeight();
 
-    // 0. Carve out a 25px top margin so panel headers don't overlap with the top knob row [CRITICAL FIX]
     area.removeFromTop (25);
 
-    // 1. Bottom Section: 8 Scale-Degree Faders (Faders vertical scale reduced by 20%)
+    // 1. Bottom Section: 8 Scale-Degree Faders
     int bottomHeight = static_cast<int>(totalHeight * 0.17f); 
     auto bottomArea = area.removeFromBottom (bottomHeight);
     auto faderLabelArea = bottomArea.removeFromBottom (16);
@@ -914,38 +890,31 @@ void PluginEditor::resized()
 
     area.removeFromBottom (10);
 
-    // 2. Symmetrical Crossfader row with expanded button slots [NEW]
+    // 2. Symmetrical Crossfader row with single bold Scene A and B buttons
     int morphHeight = static_cast<int>(totalHeight * 0.07f);
     auto morphArea = area.removeFromBottom (juce::jlimit (25, 45, morphHeight));
     
-    int buttonWidth = 42; // Expanded from 35px to 42px
-    int diceWidth = 36;   // Expanded from 26px to 36px
+    int buttonWidth = 42; 
     
-    // Left-Side: Symmetrical descending layout (A3, A2, A1, Dice A)
-    for (int i = 2; i >= 0; --i) {
-        sceneAButtons[i].setBounds (morphArea.removeFromLeft (buttonWidth).reduced (2, 3));
-    }
-    diceSceneAButton.setBounds (morphArea.removeFromLeft (diceWidth).reduced (2, 3));
+    // Left-Side: Symmetrical descending layout (Scene A)
+    sceneAButton.setBounds (morphArea.removeFromLeft (buttonWidth).reduced (2, 3));
 
-    // Right-Side: Symmetrical descending layout (B3, B2, B1, Dice B from right)
-    for (int i = 2; i >= 0; --i) {
-        sceneBButtons[i].setBounds (morphArea.removeFromRight (buttonWidth).reduced (2, 3));
-    }
-    diceSceneBButton.setBounds (morphArea.removeFromRight (diceWidth).reduced (2, 3));
+    // Right-Side: Symmetrical descending layout (Scene B)
+    sceneBButton.setBounds (morphArea.removeFromRight (buttonWidth).reduced (2, 3));
 
-    // Center Crossfader (Symmetrically restricted to remaining space)
+    // Center Crossfader 
     morphCrossfader.setBounds (morphArea.reduced (15, 5));
 
     area.removeFromBottom (15);
 
-    // 3. Sidebars with vertical spacer configurations [NEW]
+    // 3. Sidebars with vertical spacer configurations
     int sidebarWidth = static_cast<int>(totalWidth * 0.15f); 
     auto leftSidebar = area.removeFromLeft (sidebarWidth);
     auto rightSidebar = area.removeFromRight (sidebarWidth);
     
     // Left Sidebar Layout
     auto leftBtnArea = leftSidebar.removeFromBottom (70).reduced (5, 2);
-    leftSidebar.removeFromBottom (15); // Dedicated 15px layout gap [NEW]
+    leftSidebar.removeFromBottom (15); 
     
     int leftRowHeight = leftSidebar.getHeight() / 4;
     juce::Label* leftTitles[] = { &rhythmMorphTitle, &restTitle, &legatoTitle, &rateTitle };
@@ -954,18 +923,19 @@ void PluginEditor::resized()
     for (int i = 0; i < 4; ++i)
     {
         auto row = leftSidebar.removeFromTop (leftRowHeight);
-        // Labels positioned directly below the knobs [NEW]
         leftKnobs[i]->setBounds (row.removeFromTop (row.getHeight() - 16).reduced (4, 2));
         leftTitles[i]->setBounds (row);
     }
     
-    int leftBtnHeight = leftBtnArea.getHeight() / 2;
-    saveButton.setBounds (leftBtnArea.removeFromTop (leftBtnHeight).reduced (2));
-    recallButton.setBounds (leftBtnArea.reduced (2));
+    int leftBtnWidth = leftBtnArea.getWidth() / 2;
+    saveButton.setBounds (leftBtnArea.removeFromLeft (leftBtnWidth).reduced (2));
+    recallButton.setBounds (leftBtnArea.removeFromLeft (leftBtnWidth).reduced (2));
+    copyButton.setBounds (leftBtnArea.removeFromLeft (leftBtnWidth).reduced (2));
+    initButton.setBounds (leftBtnArea.reduced (2));
 
     // Right Sidebar Layout
     auto diceArea = rightSidebar.removeFromBottom (70).reduced (5, 2);
-    rightSidebar.removeFromBottom (15); // Dedicated 15px layout gap [NEW]
+    rightSidebar.removeFromBottom (15); 
     
     int rightRowHeight = rightSidebar.getHeight() / 4;
     juce::Label* rightTitles[] = { &entropyTitle, &harmonyTitle, &chaosTitle, &octavesTitle };
@@ -974,14 +944,15 @@ void PluginEditor::resized()
     for (int i = 0; i < 4; ++i)
     {
         auto row = rightSidebar.removeFromTop (rightRowHeight);
-        // Labels positioned directly below the knobs [NEW]
         rightKnobs[i]->setBounds (row.removeFromTop (row.getHeight() - 16).reduced (4, 2));
         rightTitles[i]->setBounds (row);
     }
     
-    int diceBtnHeight = diceArea.getHeight() / 2;
-    diceMelodyButton.setBounds (diceArea.removeFromTop (diceBtnHeight).reduced (2));
-    diceRhythmButton.setBounds (diceArea.reduced (2));
+    int diceBtnWidth = diceArea.getWidth() / 2;
+    diceMeloButton.setBounds (diceArea.removeFromLeft (diceBtnWidth).reduced (2));
+    diceArtiButton.setBounds (diceArea.removeFromLeft (diceBtnWidth).reduced (2));
+    diceTimeButton.setBounds (diceArea.removeFromLeft (diceBtnWidth).reduced (2));
+    diceNavyButton.setBounds (diceArea.reduced (2));
 
     // 4. Center Section: Dropdown Bar, OLED Display, and 8 Preset Buttons
     int presetHeight = static_cast<int>(totalHeight * 0.06f);
@@ -993,8 +964,8 @@ void PluginEditor::resized()
     auto dropdownBarArea = oledArea.removeFromTop (juce::jlimit (28, 40, dropdownBarHeight));
     int totalCenterWidth = dropdownBarArea.getWidth();
     
-    int systemButtonWidth = 70;
-    int availableWidthForComboBoxes = totalCenterWidth - (systemButtonWidth * 2) - 20; 
+    int systemButtonWidth = 55; // Calibrated for compact 4-letter labels
+    int availableWidthForComboBoxes = totalCenterWidth - (systemButtonWidth * 4) - 20; 
     int selectWidth = availableWidthForComboBoxes / 3;
 
     rootKeyBox.setBounds (dropdownBarArea.removeFromLeft (selectWidth).reduced (2, 2));
@@ -1003,7 +974,9 @@ void PluginEditor::resized()
     
     dropdownBarArea.removeFromLeft (20); // Spacing gap before system buttons
     latchButton.setBounds (dropdownBarArea.removeFromLeft (systemButtonWidth).reduced (2, 2));
-    chordModeButton.setBounds (dropdownBarArea.removeFromLeft (systemButtonWidth).reduced (2, 2));
+    arpSeqButton.setBounds (dropdownBarArea.removeFromLeft (systemButtonWidth).reduced (2, 2));
+    polyButton.setBounds (dropdownBarArea.removeFromLeft (systemButtonWidth).reduced (2, 2));
+    freezeButton.setBounds (dropdownBarArea.removeFromLeft (systemButtonWidth).reduced (2, 2));
     
     oledDisplay.setBounds (oledArea.reduced (0, 5));
 

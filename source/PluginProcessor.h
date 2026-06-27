@@ -3,6 +3,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <vector>
 #include <atomic>
+#include <array>
 
 namespace IDs 
 {
@@ -11,7 +12,7 @@ namespace IDs
     DECLARE_ID(fader5); DECLARE_ID(fader6); DECLARE_ID(fader7); DECLARE_ID(fader8);
     DECLARE_ID(rhythmMorph); DECLARE_ID(rest); DECLARE_ID(legato);
     DECLARE_ID(entropy); DECLARE_ID(harmony); DECLARE_ID(chaos);
-    DECLARE_ID(morph); DECLARE_ID(latch); DECLARE_ID(chordMode);
+    DECLARE_ID(morph); DECLARE_ID(latch); DECLARE_ID(arpSeq); DECLARE_ID(poly); DECLARE_ID(freeze);
     DECLARE_ID(rootKey); DECLARE_ID(scaleType); DECLARE_ID(cycleLength);
     DECLARE_ID(rate); DECLARE_ID(octaves); 
 
@@ -41,7 +42,7 @@ struct SceneState {
     float chaos = 0.0f;
     float octaves = 0.0f; // Default 0 (no octave shift)
 
-    // Full 16-channel LFO parameter states [5]
+    // Full 16-channel LFO parameter states
     int lfoRates[8] = { 0 };
     float lfoDepths[8] = { 0.0f };
 };
@@ -75,47 +76,40 @@ public:
     void getStateInformation (juce::MemoryBlock& destData) override;
     void setStateInformation (const void* data, int sizeInBytes) override;
 
-    // Inline forwards delegating to the private consolidated helpers
-    void saveSceneA (int slotIndex) { saveScene (slotIndex, 0); }
-    void loadSceneA (int slotIndex) { loadScene (slotIndex, 0); }
-    void saveSceneB (int slotIndex) { saveScene (slotIndex, 1); }
-    void loadSceneB (int slotIndex) { loadScene (slotIndex, 1); }
-
-    bool isSceneASaved (int slotIndex) const { return sceneASlotsSaved[slotIndex]; }
-    bool isSceneBSaved (int slotIndex) const { return sceneBSlotsSaved[slotIndex]; }
+    // Symmetrical Scene Management (Direct to Scene A or B)
+    void saveSceneA() { captureScene (0); }
+    void saveSceneB() { captureScene (1); }
+    void clearSceneA() { hasSceneA = false; }
+    void clearSceneB() { hasSceneB = false; }
 
     void savePreset (int slotIndex);
     void loadPreset (int slotIndex);
     bool isPresetSaved (int slotIndex) const { return presetSlotsSaved[slotIndex]; }
 
-    void captureSceneA();
-    void captureSceneB();
-    void clearSceneA() { hasSceneA = false; }
-    void clearSceneB() { hasSceneB = false; }
-
-    // Generative triggers
-    void diceMelody();
-    void diceRhythm();
-    void diceActiveSceneA(); 
-    void diceActiveSceneB(); 
-    void resetAccumulator();
-    void resetRhythm();
-    void triggerDiatonicChordPad (int padIndex);
+    // Unified Project-Based Scene Arrays (Presets 1-8 save/restore both Scene A & B)
+    SceneState sceneAPresets[8];
+    SceneState sceneBPresets[8];
+    bool sceneASlotsSaved[8] = { false };
+    bool sceneBSlotsSaved[8] = { false };
 
     SceneState sceneA;
     SceneState sceneB;
     bool hasSceneA = false;
     bool hasSceneB = false;
 
-    // Symmetrical 3-Slot Scene Memory
-    SceneState sceneAPresets[3];
-    SceneState sceneBPresets[3];
-    bool sceneASlotsSaved[3] = { false };
-    bool sceneBSlotsSaved[3] = { false };
-    
-    std::atomic<int> activeSceneAIndex { 0 }; 
-    std::atomic<int> activeSceneBIndex { 0 }; 
     std::atomic<int> activePresetIndex { 0 }; // Keeps track of currently selected preset slot
+    std::atomic<bool> isSceneBActiveAnchor { false }; // Active editing/loading target
+
+    // Generative triggers (No LFO randomization, strictly protected!)
+    void diceMelody();
+    void diceArticulation();
+    void diceTime();
+    void diceNavy();
+    void diceActiveSceneA(); 
+    void diceActiveSceneB(); 
+    void resetAccumulator();
+    void resetRhythm();
+    void triggerDiatonicChordPad (int padIndex);
 
     int currentStep = 0;
     int currentBarInCycle = 1;
@@ -145,9 +139,7 @@ private:
     std::vector<int> generateEuclideanPattern (int steps, int pulses);
     void scheduleNoteOff (juce::MidiBuffer& midi, int pitch, int delaySamples);
 
-    // Private consolidated scene management helpers
-    void saveScene (int slotIndex, int side);
-    void loadScene (int slotIndex, int side);
+    void captureScene (int side);
 
     double mSampleRate = 44100.0;
     int mTimeInSamples = 0;
@@ -176,8 +168,13 @@ private:
 
     std::vector<int> lastChordPitches;
 
+    // Presets 1-8 Master Kits
     SceneState presets[8];
     bool presetSlotsSaved[8] = { false };
+
+    // Slew smoothing arrays for pop-free transitions
+    float currentSlewTarget[24] = { 0.0f };
+    float currentSlewValue[24] = { 0.0f };
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginProcessor)
 };

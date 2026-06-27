@@ -24,7 +24,7 @@ struct AppTheme
     static AppTheme get (int index)
     {
         AppTheme t;
-        if (index == 1) // Skyline Eurorack (Light Beige Panel) [5]
+        if (index == 1) // Skyline Eurorack (Light Beige Panel)
         {
             t.background    = juce::Colour (0xFFE2E0D8);
             t.border        = juce::Colour (0xFFB8B5AB);
@@ -60,7 +60,7 @@ struct AppTheme
             t.faderCap      = juce::Colour (0xFF112A18);
             t.unlitLed      = juce::Colour (0xFF0E1A11);
         }
-        else // Default Navy Cyber (Dark default) [5]
+        else // Default Navy Cyber (Dark default)
         {
             t.background    = juce::Colour (0xFF16181F);
             t.border        = juce::Colour (0xFF2A2E3D);
@@ -77,7 +77,7 @@ struct AppTheme
 };
 
 // ==============================================================================
-// Custom DJ TechTools / Chroma Caps Style Rotary & Linear LookAndFeel [5]
+// Custom DJ TechTools / Chroma Caps Style Rotary & Linear LookAndFeel
 // ==============================================================================
 class ChromaCapsLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -97,7 +97,7 @@ public:
         auto toX = bounds.getCentreX();
         auto toY = bounds.getCentreY();
 
-        // Load active theme colors dynamically [NEW]
+        // Load active theme colors dynamically
         int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
         auto t = AppTheme::get (themeIdx);
 
@@ -193,7 +193,7 @@ public:
                 lfoRateVal = static_cast<int> (*processor.apvts.getRawParameterValue (IDs::octavesLfoRate.getParamID()));
                 float baseOctaves = static_cast<float> (*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
                 float rawOctaves = (lfoRateVal > 0) ? static_cast<float>(processor.activeOctavesVal) : baseOctaves;
-                visualValue = (rawOctaves + 2.0f) / 5.0f; 
+                visualValue = (rawOctaves + 3.0f) / 6.0f; // Symmetrical scale layout matching -3 to +3 [NEW]
             }
             
             lfoActive = (lfoRateVal > 0);
@@ -340,23 +340,16 @@ public:
         int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
         auto t = AppTheme::get (themeIdx);
         
-        if (id == "dice_scene_a" || id == "dice_scene_b")
+        if (id == "dice_melody" || id == "dice_articulation" || id == "dice_time" || id == "dice_navy")
         {
             auto bounds = button.getLocalBounds().toFloat();
-            juce::Colour pipCol = (id == "dice_scene_a") ? t.leftAccent : t.rightAccent;
-            if (shouldDrawButtonAsDown) pipCol = pipCol.brighter (0.2f);
-            drawVectorDice (g, bounds, pipCol);
-        }
-        else if (id == "dice_melody" || id == "dice_rhythm")
-        {
-            auto bounds = button.getLocalBounds().toFloat();
-            auto diceBounds = bounds.removeFromLeft (bounds.getHeight()); // Make square for vector dice placement
+            auto diceBounds = bounds.removeFromLeft (12.0f).reduced (1.0f); // Standardized 12px vector dice bounds [NEW]
             
             juce::Colour pipCol = t.rightAccent;
             if (shouldDrawButtonAsDown) pipCol = pipCol.brighter (0.2f);
-            drawVectorDice (g, diceBounds.reduced (4.0f), pipCol);
+            drawVectorDice (g, diceBounds, pipCol);
             
-            // Draw text dynamically next to it
+            // Render text next to it in sentence case (no shouting) [NEW]
             g.setColour (button.findColour (juce::TextButton::textColourOffId));
             g.setFont (getTextButtonFont (button, button.getHeight()));
             g.drawFittedText (button.getButtonText(), bounds.toNearestInt(), juce::Justification::centred, 1);
@@ -370,18 +363,18 @@ public:
 private:
     void drawVectorDice (juce::Graphics& g, juce::Rectangle<float> bounds, juce::Colour pipColour)
     {
-        auto diceFace = bounds.reduced (bounds.getWidth() * 0.22f);
+        auto diceFace = bounds.reduced (bounds.getWidth() * 0.15f);
         
         // Face background
         g.setColour (pipColour.withAlpha (0.12f));
-        g.fillRoundedRectangle (diceFace, 4.0f);
+        g.fillRoundedRectangle (diceFace, 2.0f);
         
         // Face border
         g.setColour (pipColour.withAlpha (0.75f));
-        g.drawRoundedRectangle (diceFace, 4.0f, 1.2f);
+        g.drawRoundedRectangle (diceFace, 2.0f, 1.0f);
         
         // Symmetrical pips
-        float pipSize = juce::jmax (1.5f, diceFace.getWidth() * 0.16f);
+        float pipSize = juce::jmax (1.2f, diceFace.getWidth() * 0.16f);
         float cx = diceFace.getCentreX();
         float cy = diceFace.getCentreY();
         float w = diceFace.getWidth();
@@ -391,11 +384,11 @@ private:
         g.setColour (pipColour);
         
         // Render 5 pips
-        g.fillEllipse (cx - pipSize * 0.5f, cy - pipSize * 0.5f, pipSize, pipSize); // Center
-        g.fillEllipse (cx - w * offset - pipSize * 0.5f, cy - h * offset - pipSize * 0.5f, pipSize, pipSize); // Top-Left
-        g.fillEllipse (cx + w * offset - pipSize * 0.5f, cy - h * offset - pipSize * 0.5f, pipSize, pipSize); // Top-Right
-        g.fillEllipse (cx - w * offset - pipSize * 0.5f, cy + h * offset - pipSize * 0.5f, pipSize, pipSize); // Bottom-Left
-        g.fillEllipse (cx + w * offset - pipSize * 0.5f, cy + h * offset - pipSize * 0.5f, pipSize, pipSize); // Bottom-Right
+        g.fillEllipse (cx - pipSize * 0.5f, cy - pipSize * 0.5f, pipSize, pipSize); 
+        g.fillEllipse (cx - w * offset - pipSize * 0.5f, cy - h * offset - pipSize * 0.5f, pipSize, pipSize); 
+        g.fillEllipse (cx + w * offset - pipSize * 0.5f, cy - h * offset - pipSize * 0.5f, pipSize, pipSize); 
+        g.fillEllipse (cx - w * offset - pipSize * 0.5f, cy + h * offset - pipSize * 0.5f, pipSize, pipSize); 
+        g.fillEllipse (cx + w * offset - pipSize * 0.5f, cy + h * offset - pipSize * 0.5f, pipSize, pipSize); 
     }
 
     PluginProcessor& processor;
@@ -454,8 +447,8 @@ public:
         int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
         auto t = AppTheme::get (themeIdx);
 
-        // Keep OLED screen background dark and professional even on light beige panels!
-        g.fillAll (t.background.darker (0.9f)); 
+        // Keep OLED screen background dark, high-contrast, and professional even on light beige panels! [NEW]
+        g.fillAll (juce::Colour (0xFF08080A)); // Deep Obsidian canvas
         g.setColour (t.border); 
         g.drawRect (getLocalBounds().toFloat(), 2.0f);
 
@@ -468,11 +461,11 @@ public:
             juce::String prefixes[] = { "MORPH", "REST", "LEGATO", "RATE", "ENTROPY", "HARMONY", "CHAOS", "OCTAVES" };
             
             g.setColour (t.leftAccent);
-            g.setFont (juce::Font ("Consolas", 14.0f, juce::Font::bold));
+            g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); // Dynamic font config [NEW]
             g.drawText ("LFO PREVIEW: " + prefixes[lfoActiveParamIdx], 15, 12, getWidth() - 30, 20, juce::Justification::centred);
 
-            g.setFont (juce::Font ("Consolas", 10.0f, juce::Font::plain));
-            g.setColour (juce::Colour (0xFF888A90));
+            g.setFont (juce::Font (juce::FontOptions (10.0f)));
+            g.setColour (juce::Colour (0xFFFFB300));
             juce::String speedRate = processor.apvts.getParameter(prefixes[lfoActiveParamIdx].toLowerCase() + "LfoRate")->getCurrentValueAsText();
             g.drawText ("RATE: " + speedRate + " | DEPTH: " + juce::String(static_cast<int>(lastLfoDepths[lfoActiveParamIdx] * 100.0f)) + "%",
                         15, 25, getWidth() - 30, 15, juce::Justification::centred);
@@ -506,37 +499,36 @@ public:
             // Choose symmetrical left/right accent color
             g.setColour (lfoActiveParamIdx < 4 ? t.leftAccent : t.rightAccent);
             g.strokePath (wavePath, juce::PathStrokeType (1.8f));
-            return; // Intercept drawing to skip standard meters
+            return; 
         }
 
-        g.setColour (t.leftAccent);
-        g.setFont (juce::Font ("Consolas", 14.0f, juce::Font::bold));
-        juce::String headerText = "NAVY-ARP GRAPHIC MONITOR";
-        g.drawFittedText (headerText, getLocalBounds().removeFromTop (25), juce::Justification::centred, 1);
+        // Draw Inverted Header Banner [NEW]
+        auto headerArea = getLocalBounds().removeFromTop (25);
+        g.setColour (juce::Colour (0xFF181C24)); // Dark-charcoal banner strip
+        g.fillRect (headerArea);
+        
+        g.setColour (juce::Colour (0xFFFFFFFF)); // Crisp white text
+        g.setFont (juce::Font (juce::FontOptions (12.0f).withStyle ("Bold"))); 
+        g.drawText ("NAVY-ARP MONITOR", headerArea, juce::Justification::centred, true);
 
-        // Real-time OLED Context Information
+        // Real-time OLED Context Information [NEW]
         juce::String scaleName = processor.apvts.getParameter(IDs::scaleType.getParamID())->getCurrentValueAsText();
         juce::String keyName = processor.apvts.getParameter(IDs::rootKey.getParamID())->getCurrentValueAsText();
         int extType = processor.activeChordExtensionType.load();
         juce::String extText = (extType == 0) ? "TRIAD" : (extType == 1) ? "SUS" : "7TH/9TH";
 
         juce::String speedRate = processor.apvts.getParameter(IDs::rate.getParamID())->getCurrentValueAsText();
-        juce::String activeOcts = processor.apvts.getParameter(IDs::octaves.getParamID())->getCurrentValueAsText();
+        int octValue = static_cast<int>(*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
+        juce::String activeOcts = (octValue >= 0) ? "+" + juce::String (octValue) : juce::String (octValue);
 
-        g.setFont (juce::Font ("Consolas", 11.0f, juce::Font::plain));
-        g.setColour (juce::Colour (0xFF888A90));
-        g.drawText ("KEY: " + keyName + " | SCALE: " + scaleName + " | EXT: " + extText + " | RATE: " + speedRate + " | OCT: " + activeOcts, 
-                    10, 25, getWidth() - 20, 15, juce::Justification::centred);
+        g.setFont (juce::Font (juce::FontOptions (10.0f))); // Compact metadata size [NEW]
+        g.setColour (juce::Colour (0xFFFFB300)); // Vivid Amber-Orange
+        g.drawText ("KEY: " + keyName + " | SCALE: " + scaleName + " | VOICE: " + extText + " | RATE: " + speedRate + " | OCT: " + activeOcts, 
+                    10, 27, getWidth() - 20, 15, juce::Justification::centred);
 
-        area.removeFromTop (35); 
+        area.removeFromTop (27); 
         
-        // 1. Draw subtle horizontal grid thresholds
-        g.setColour (juce::Colour (0xFF141822));
-        for (float pct : { 0.25f, 0.50f, 0.75f })
-        {
-            float gridY = area.getBottom() - 15.0f - (area.getHeight() - 15.0f) * pct * 0.75f;
-            g.drawHorizontalLine (static_cast<int>(gridY), (float)area.getX(), (float)area.getRight());
-        }
+        // 4 Horizontal lines removed for visual cleanliness [NEW]
 
         int barWidth = area.getWidth() / 8;
         int spacing = 6;
@@ -544,7 +536,7 @@ public:
         for (int i = 0; i < 8; ++i)
         {
             float faderProb = *processor.apvts.getRawParameterValue ("fader" + juce::String (i + 1));
-            int barHeight = static_cast<int>((area.getHeight() - 15) * faderProb * 0.75f);
+            int barHeight = static_cast<int>((area.getHeight() - 20) * faderProb * 0.75f);
             
             juce::Rectangle<int> bar (area.getX() + (i * barWidth) + spacing, 
                                       area.getBottom() - barHeight - 15, 
@@ -553,31 +545,35 @@ public:
 
             bool isPlaying = processor.isCurrentlyPlayingUI.load();
 
-            // 2. Draw dynamic step bars
-            if (i == processor.currentStep && isPlaying)
+            // Symmetrical Segmented VU-Meter Stack drawing [NEW]
+            int stepSegments = juce::jmax (1, barHeight / 3);
+            for (int seg = 0; seg < stepSegments; ++seg)
             {
-                if (i == 0)      g.setColour (juce::Colour (0xFF4CFF4C)); // Beat 1: Green
-                else if (i == 4) g.setColour (juce::Colour (0xFFFF4C4C)); // Beat 5: Red
-                else             g.setColour (t.leftAccent); // Matches the current theme's primary left accent
-                g.fillRect (bar.expanded(1, 1));
-            }
-            else
-            {
-                if (i % 3 == 0)      g.setColour (t.leftAccent.withAlpha (0.85f)); 
-                else if (i % 4 == 0) g.setColour (juce::Colour (0xFF9966FF)); 
-                else                 g.setColour (juce::Colour (0xFFFFAA00)); 
-                g.fillRect (bar);
+                int segY = bar.getBottom() - (seg * 4) - 3;
+                if (segY < bar.getY()) break;
+                
+                juce::Rectangle<int> segment (bar.getX(), segY, bar.getWidth(), 3);
+                
+                if (i == processor.currentStep && isPlaying)
+                {
+                    if (i == 0)      g.setColour (juce::Colour (0xFF4CFF4C)); // Beat 1: Green
+                    else if (i == 4) g.setColour (juce::Colour (0xFFFF4C4C)); // Beat 5: Red
+                    else             g.setColour (t.leftAccent); 
+                }
+                else
+                {
+                    g.setColour (t.leftAccent.withAlpha (0.45f));
+                }
+                g.fillRect (segment);
             }
 
-            // 3. Symmetrical Sequencer Step indicators
+            // Step indicators
             juce::String stepNumStr = juce::String (i + 1);
-            g.setFont (juce::Font ("Consolas", 10.0f, juce::Font::bold));
+            g.setFont (juce::Font (juce::FontOptions (8.0f))); // Unified Micro-Monospace [NEW]
             
             if (i == processor.currentStep && isPlaying)
             {
-                if (i == 0)      g.setColour (juce::Colour (0xFF4CFF4C)); 
-                else if (i == 4) g.setColour (juce::Colour (0xFFFF4C4C)); 
-                else             g.setColour (t.leftAccent);
+                g.setColour (juce::Colours::white);
             }
             else
             {
@@ -587,6 +583,18 @@ public:
             int numX = area.getX() + (i * barWidth);
             g.drawText (stepNumStr, numX, area.getBottom() - 12, barWidth, 12, juce::Justification::centred);
         }
+        
+        // Draw diagonal glass reflection glint [NEW]
+        juce::Path glint;
+        glint.startNewSubPath (0.0f, 0.0f);
+        glint.lineTo (static_cast<float>(getWidth() * 0.45f), 0.0f);
+        glint.lineTo (0.0f, static_cast<float>(getHeight() * 0.95f));
+        glint.closeSubPath();
+        
+        juce::ColourGradient grad (juce::Colours::white.withAlpha (0.02f), 0.0f, 0.0f, 
+                                   juce::Colours::white.withAlpha (0.0f), static_cast<float>(getWidth() * 0.3f), static_cast<float>(getHeight() * 0.6f), false);
+        g.setGradientFill (grad);
+        g.fillPath (glint);
     }
 
 private:
@@ -600,7 +608,7 @@ private:
 // ==============================================================================
 class PluginEditor : public juce::AudioProcessorEditor, 
                      public juce::Timer,
-                     public juce::AudioProcessorValueTreeState::Listener // Inherit from Parameter Listener [3]
+                     public juce::AudioProcessorValueTreeState::Listener 
 {
 public:
     PluginEditor (PluginProcessor&);
@@ -613,13 +621,12 @@ public:
     void mouseDown (const juce::MouseEvent& event) override;
     void mouseUp (const juce::MouseEvent& event) override;
 
-    // Trigger instant GUI repaint when active theme parameter is changed [3]
     void parameterChanged (const juce::String& parameterID, float newValue) override;
 
 private:
     PluginProcessor& processor;
     OledDisplay oledDisplay;
-    ChromaCapsLookAndFeel chromaLookAndFeel; // Custom rubber-cap style controls [5]
+    ChromaCapsLookAndFeel chromaLookAndFeel; 
 
     juce::Slider fader1, fader2, fader3, fader4, fader5, fader6, fader7, fader8;
     juce::Label faderLabel1, faderLabel2, faderLabel3, faderLabel4, faderLabel5, faderLabel6, faderLabel7, faderLabel8;
@@ -632,47 +639,66 @@ private:
 
     juce::Slider morphCrossfader;
 
+    // Performance Deck Buttons [NEW]
     juce::TextButton latchButton;
-    juce::TextButton chordModeButton;
-    juce::TextButton diceMelodyButton;
-    juce::TextButton diceRhythmButton;
+    juce::TextButton arpSeqButton;
+    juce::TextButton polyButton;
+    juce::TextButton freezeButton;
     
-    // Symmetrical 3-Slot Scene Buttons [NEW]
-    juce::TextButton sceneAButtons[3];
-    juce::TextButton sceneBButtons[3];
-    juce::TextButton diceSceneAButton;
-    juce::TextButton diceSceneBButton;
+    // Symmetrical Octatrack Scene Buttons
+    juce::TextButton sceneAButton;
+    juce::TextButton sceneBButton;
 
+    // Left-Hand 2x2 Utility Buttons
     juce::TextButton saveButton;
     juce::TextButton recallButton;
-    juce::TextButton presetButtons[8]; // Declared Preset Slots Array [CRITICAL FIX]
+    juce::TextButton copyButton;
+    juce::TextButton initButton;
+
+    // Right-Hand 2x2 Dice Buttons
+    juce::TextButton diceMeloButton;
+    juce::TextButton diceArtiButton;
+    juce::TextButton diceTimeButton;
+    juce::TextButton diceNavyButton;
+
+    juce::TextButton presetButtons[8]; 
 
     juce::ComboBox rootKeyBox;
     juce::ComboBox scaleTypeBox;
     juce::ComboBox cycleLengthBox;
 
-    // Symmetrical time trackers for hold-to-save scene logic
-    uint32_t sceneAPressStartTime[3] = { 0 };
-    uint32_t sceneBPressStartTime[3] = { 0 };
-
-    // Symmetrical holds state tracker for real-time saving
-    bool sceneAAlreadySaved[3] = { false };
-    bool sceneBAlreadySaved[3] = { false };
+    // Symmetrical holds state trackers
+    uint32_t sceneAPressStartTime = 0;
+    uint32_t sceneBPressStartTime = 0;
+    bool sceneAAlreadySaved = false;
+    bool sceneBAlreadySaved = false;
 
     // Flash counters for visual confirm
-    int sceneAFlashTimer[3] = { 0 };
-    int sceneBFlashTimer[3] = { 0 };
+    int sceneAFlashTimer = 0;
+    int sceneBFlashTimer = 0;
 
-    // Dynamic Preset Slot Hold and Flash Trackers [NEW]
+    // Preset Slot Hold and Flash Trackers
     uint32_t presetPressStartTime[8] = { 0 };
     bool presetAlreadySaved[8] = { false };
     int presetFlashTimer[8] = { 0 };
-    int presetFlashType[8] = { 0 }; // 1 = Amber (Save), 2 = Cyan (Recall)
+    int presetFlashType[8] = { 0 }; 
 
-    // Master Save Button Long-Press confirmation timers [NEW]
+    // Master Utility Latching and Long-Press Trackers [NEW]
     uint32_t savePressStartTime = 0;
     bool saveAlreadySaved = false;
     int saveFlashTimer = 0;
+
+    uint32_t recallPressStartTime = 0;
+    bool recallAlreadySaved = false;
+    int recallFlashTimer = 0;
+
+    uint32_t copyPressStartTime = 0;
+    bool copyAlreadySaved = false;
+    int copyFlashTimer = 0;
+
+    uint32_t initPressStartTime = 0;
+    bool initAlreadySaved = false;
+    int initFlashTimer = 0;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader1Attachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader2Attachment;
@@ -695,7 +721,9 @@ private:
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> morphAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> latchAttachment;
-    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> chordModeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> arpSeqAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> polyAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> freezeAttachment;
 
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> rootKeyAttachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
