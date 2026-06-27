@@ -460,7 +460,7 @@ public:
             g.setColour (juce::Colour (0xFFFFB300));
             juce::String speedRate = processor.apvts.getParameter(prefixes[lfoActiveParamIdx].toLowerCase() + "LfoRate")->getCurrentValueAsText();
             g.drawText ("RATE: " + speedRate + " | DEPTH: " + juce::String(static_cast<int>(lastLfoDepths[lfoActiveParamIdx] * 100.0f)) + "%",
-                        15, 25, getWidth() - 30, 15, juce::Justification::centred);
+                        15, 27, getWidth() - 30, 15, juce::Justification::centred);
 
             // Draw clean real-time scrolling sine wave representation
             juce::Path wavePath;
@@ -690,4 +690,36 @@ private:
     bool initAlreadySaved = false;
     int initFlashTimer = 0;
 
-    
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader1Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader2Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader3Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader4Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader5Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader6Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader7Attachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader8Attachment;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> rhythmMorphAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> restAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> legatoAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> rateAttachment;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> entropyAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> harmonyAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> chaosAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> octavesAttachment;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> morphAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> latchAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> arpSeqAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> polyAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ButtonAttachment> freezeAttachment;
+
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> rootKeyAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> scaleTypeAttachment;
+    std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> cycleLengthAttachment;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (PluginEditor)
+};
+
+#endif // NAVY_ARP_EDITOR_H
