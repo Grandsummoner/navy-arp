@@ -20,6 +20,7 @@ project(${PROJECT_NAME} VERSION ${CURRENT_VERSION})
 include(PamplejuceLog)
 
 add_subdirectory(JUCE)
+add_subdirectory(modules/clap-juce-extensions EXCLUDE_FROM_ALL)
 
 juce_add_plugin("${PROJECT_NAME}"
     COMPANY_NAME "${COMPANY_NAME}"
@@ -36,6 +37,10 @@ juce_add_plugin("${PROJECT_NAME}"
 )
 
 add_library(SharedCode INTERFACE)
+
+clap_juce_extensions_plugin(TARGET "${PROJECT_NAME}"
+    CLAP_ID "${BUNDLE_ID}"
+    CLAP_FEATURES instrument synthesiser)
 
 include(SharedCodeDefaults)
 
