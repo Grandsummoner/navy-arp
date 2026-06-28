@@ -20,12 +20,8 @@ project(${PROJECT_NAME} VERSION ${CURRENT_VERSION})
 include(PamplejuceLog)
 
 add_subdirectory(JUCE)
-add_subdirectory(modules/clap-juce-extensions EXCLUDE_FROM_ALL)
-add_subdirectory(modules/melatonin_inspector)
 
 juce_add_plugin("${PROJECT_NAME}"
-    # Relocated icon path to allow safe deletion of the packaging/ directory
-    ICON_BIG "${CMAKE_CURRENT_SOURCE_DIR}/assets/images/icon.png"
     COMPANY_NAME "${COMPANY_NAME}"
     BUNDLE_ID "${BUNDLE_ID}"
     COPY_PLUGIN_AFTER_BUILD TRUE
@@ -40,10 +36,6 @@ juce_add_plugin("${PROJECT_NAME}"
 )
 
 add_library(SharedCode INTERFACE)
-
-clap_juce_extensions_plugin(TARGET "${PROJECT_NAME}"
-    CLAP_ID "${BUNDLE_ID}"
-    CLAP_FEATURES instrument synthesiser)
 
 include(SharedCodeDefaults)
 
@@ -66,7 +58,6 @@ target_compile_definitions(SharedCode
 target_link_libraries(SharedCode
     INTERFACE
     Assets
-    melatonin_inspector
     juce_audio_utils
     juce_audio_processors
     juce_dsp
@@ -79,4 +70,3 @@ target_link_libraries(SharedCode
 target_link_libraries("${PROJECT_NAME}" PRIVATE SharedCode)
 
 include(PamplejuceIPP)
-# Removed Tests, Benchmarks, and GitHubENV includes to cleanly match the deleted modular folders
