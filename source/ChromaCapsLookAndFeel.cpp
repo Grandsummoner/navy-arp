@@ -72,7 +72,9 @@ void ChromaCapsLookAndFeel::drawRotarySlider (juce::Graphics& g, int x, int y, i
         }
         else if (pId == "entropy") {
             lfoRateVal = static_cast<int> (*processor.apvts.getRawParameterValue (IDs::entropyLfoRate.getParamID()));
-            visualValue = (lfoRateVal > 0) ? processor.activeEntropy : sliderPos;
+            float baseEntropy = static_cast<float> (*processor.apvts.getRawParameterValue (IDs::entropy.getParamID()));
+            float rawEntropy = (lfoRateVal > 0) ? processor.activeEntropy : baseEntropy;
+            visualValue = (rawEntropy + 1.0f) * 0.5f;
         }
         else if (pId == "harmony") {
             lfoRateVal = static_cast<int> (*processor.apvts.getRawParameterValue (IDs::harmonyLfoRate.getParamID()));
@@ -241,24 +243,6 @@ void ChromaCapsLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton&
         if (isPreset) textCol = processor.isPresetSaved (presetIdx) ? t.leftAccent.brighter(0.2f) : (themeIdx == 1 ? juce::Colour (0xFF7A7870) : juce::Colour (0xFF55555C));
         g.setColour (textCol); g.setFont (getTextButtonFont (button, button.getHeight())); g.drawFittedText (button.getButtonText(), button.getLocalBounds(), juce::Justification::centred, 1);
     }
-}
-
-void ChromaCapsLookAndFeel::drawTextBox (juce::Graphics& g, juce::Slider& slider, int x, int y, int width, int height)
-{
-    juce::ignoreUnused (slider);
-    auto bounds = juce::Rectangle<int> (x, y, width, height).toFloat().reduced (1.0f);
-    int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
-    auto t = AppTheme::get (themeIdx);
-
-    bool isFreezeActive = *processor.apvts.getRawParameterValue (IDs::freeze.getParamID()) > 0.5f;
-    juce::Colour borderCol = isFreezeActive ? juce::Colour (0xFF80D8FF) : t.slotOutline;
-
-    // Standard state: Rounded capsule (pill) with a dark matte charcoal fill
-    g.setColour (juce::Colour (0xFF0F1116));
-    g.fillRoundedRectangle (bounds, 4.0f);
-
-    g.setColour (borderCol);
-    g.drawRoundedRectangle (bounds, 4.0f, 1.0f);
 }
 
 void ChromaCapsLookAndFeel::drawVectorDice (juce::Graphics& g, juce::Rectangle<float> bounds, juce::Colour pipColour)

@@ -195,7 +195,7 @@ void PluginEditor::paint (juce::Graphics& g)
     g.setColour (t.textDim); g.setFont (juce::Font (juce::FontOptions (14.0f).withStyle ("Bold")));
     g.drawText ("Rhythm", 20, 15, 150, 20, juce::Justification::left); g.drawText ("Generator", getWidth() - 170, 15, 150, 20, juce::Justification::right);
 
-    // Subtle 3D inset line around the display screen (Improvement 6)
+    // Subtle 3D inset line around display monitor
     auto displayBounds = oledDisplay.getBounds().toFloat();
     g.setColour (juce::Colour (themeIdx == 1 ? 0xFFFFFFFF : 0x18FFFFFF));
     g.drawRoundedRectangle (displayBounds.expanded(1.0f), 2.0f, 1.0f);
@@ -231,7 +231,7 @@ void PluginEditor::resized()
     int oledY = 50, presetsY = static_cast<int> (gridY + 6), crossfaderY = static_cast<int> (gridY + 48), oledHeight = presetsY - oledY - 10;
     oledDisplay.setBounds (centerStartX, oledY, centerWidth, oledHeight);
 
-    // Proportional Visual Morphing Alignment for the centered Crossfader strip
+    // Centered Crossfader Row Layout Math
     int presetBtnW = (centerWidth - 35) / 8;
     for (int i = 0; i < 8; ++i) presetButtons[i].setBounds (centerStartX + i * (presetBtnW + 5), presetsY, presetBtnW, 24);
 
@@ -257,17 +257,23 @@ void PluginEditor::timerCallback()
     static bool lastAnchorB = false; bool currentAnchorB = processor.isSceneBActiveAnchor.load();
     if (currentAnchorB != lastAnchorB) { lastAnchorB = currentAnchorB; sceneAButton.repaint(); sceneBButton.repaint(); }
 
-    // Dynamic contrast & "Ice Blue" active indicators for freeze mode (Improvement 7)
+    // Dynamic visual "Ice Blue" active indicators for freeze mode
     static bool lastFreezeState = false;
     bool currentFreeze = *processor.apvts.getRawParameterValue (IDs::freeze.getParamID()) > 0.5f;
     if (currentFreeze != lastFreezeState) {
         lastFreezeState = currentFreeze;
         int activeThemeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
         auto t = AppTheme::get (activeThemeIdx);
+        
+        juce::Colour borderCol = currentFreeze ? juce::Colour (0xFF80D8FF) : t.slotOutline;
         juce::Colour textCol = currentFreeze ? juce::Colour (0xFF80D8FF) : t.textDim;
         
         juce::Slider* knobs[] = { &rhythmMorphKnob, &restKnob, &legatoKnob, &rateKnob, &entropyKnob, &harmonyKnob, &chaosKnob, &octavesKnob };
-        for (auto* k : knobs) { k->setColour (juce::Slider::textBoxTextColourId, textCol); k->repaint(); }
+        for (auto* k : knobs) {
+            k->setColour (juce::Slider::textBoxOutlineColourId, borderCol);
+            k->setColour (juce::Slider::textBoxTextColourId, textCol);
+            k->repaint();
+        }
         freezeButton.repaint();
     }
 
