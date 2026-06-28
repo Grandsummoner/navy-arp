@@ -1,112 +1,148 @@
 #include "OledDisplay.h"
 
-OledDisplay::OledDisplay (PluginProcessor& p) : processor (p) 
-{ 
-    startTimerHz (30); 
-}
-
-OledDisplay::~OledDisplay() 
-{ 
-    stopTimer(); 
-}
-
-void OledDisplay::timerCallback()
+OledDisplay::OledDisplay()
 {
-    // Handle momentary parameter card overlay timer decay [NEW]
-    if (overlayTimer > 0)
+    // Initialize VU meters to dummy low levels
+    leftVuLevel = 0.05f;
+    rightVuLevel = 0.08f;
+}
+
+OledDisplay::~OledDisplay()
+{
+}
+
+void OledDisplay::showParameterOverlay (const juce::String& paramName, float baseValue, const juce::String& lfoVibeText)
+{
+    activeParamName = paramName;
+    activeParamValue = baseValue;
+    activeLfoVibe = lfoVibeText;
+    isOverlayActive = true;
+    
+    repaint();
+    
+    // Trigger / restart 1.5-second (1500ms) timer for overlay timeout
+    startTimer (1500);
+}
+
+void OledDisplay::setFreezeActive (bool shouldBeActive)
+{
+    if (isFreezeActive != shouldBeActive)
     {
-        overlayTimer--;
+        isFreezeActive = shouldBeActive;
         repaint();
     }
 }
 
-void OledDisplay::showParameter (const juce::String& paramName, float value, const juce::String& lfoName)
+void OledDisplay::timerCallback()
 {
-    activeParamName = paramName;
-    activeParamValue = value;
-    activeLfoPresetName = lfoName;
-    overlayTimer = 45; // 1.5 seconds at 30Hz
+    isOverlayActive = false;
+    stopTimer();
     repaint();
 }
 
 void OledDisplay::paint (juce::Graphics& g)
 {
-    int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load()); auto t = AppTheme::get (themeIdx);
-    g.fillAll (juce::Colour (0xFF08080A)); g.setColour (t.border); g.drawRect (getLocalBounds().toFloat(), 2.0f);
-    auto area = getLocalBounds().reduced (15);
+    auto bounds = getLocalBounds().toFloat();
 
-    // 1. Draw Momentary Parameter Card Overlay if active [NEW]
-    if (overlayTimer > 0)
+    // 1. Fill Screen Background (Obsidian Obsidian #0F1116)
+    g.setColour (juce::Colour::fromString ("#FF0F1116"));
+    g.fillRoundedRectangle (bounds, 4.0f);
+
+    // 2. Draw Bezel with Dual Offset Lines (Inset Glass Look)
+    // Dark top/left shadow line
+    g.setColour (juce::Colours::black.withAlpha (0.8f));
+    g.drawHorizontalLine (0, 0.0f, bounds.getWidth());
+    g.drawVerticalLine (0, 0.0f, bounds.getHeight());
+
+    // Light bottom/right highlight line
+    g.setColour (juce::Colours::white.withAlpha (0.15f));
+    g.drawHorizontalLine (static_cast<int> (bounds.getHeight() - 1.0f), 0.0f, bounds.getWidth());
+    g.drawVerticalLine (static_cast<int> (bounds.getWidth() - 1.0f), 0.0f, bounds.getHeight());
+
+    // Padding inside the glass screen
+    auto displayArea = bounds.reduced (10.0f);
+
+    if (isOverlayActive)
     {
-        g.setColour (juce::Colour (0xFF181C24)); // Dark-charcoal backing card
-        g.fillRoundedRectangle (area.toFloat().reduced(5.0f), 4.0f);
-        g.setColour (t.leftAccent);
-        g.drawRoundedRectangle (area.toFloat().reduced(5.0f), 4.0f, 1.2f);
+        // =====================================================================
+        // RENDER: MOMENTARY PARAMETER OVERLAY SCREEN
+        // =====================================================================
         
-        // Parameter Name Header
-        g.setColour (juce::Colours::white);
-        g.setFont (juce::Font (juce::FontOptions (15.0f).withStyle ("Bold")));
-        g.drawText ("[" + activeParamName.toUpperCase() + "]", area.getX(), area.getY() + 15, area.getWidth(), 25, juce::Justification::centred);
+        // Header Text
+        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colours::white);
+        g.setFont (juce::FontOptions (12.5f, juce::Font::bold));
+        g.drawText (activeParamName.toUpperCase(), displayArea.removeFromTop (18.0f), juce::Justification::left, true);
 
-        // Parameter Live Value
-        g.setFont (juce::Font (juce::FontOptions (11.0f).withStyle ("Bold")));
-        g.setColour (juce::Colour (0xFFFFB300)); // Saturated Amber
-        juce::String valStr = juce::String (activeParamValue, 2);
-        if (activeParamName == "Rate")
-        {
-            int rateVal = static_cast<int> (activeParamValue);
-            valStr = (rateVal == 0) ? "1/4" : (rateVal == 1) ? "1/8" : (rateVal == 2) ? "1/16" : "1/32";
-        }
-        else if (activeParamName == "Octaves")
-        {
-            int octVal = static_cast<int> (activeParamValue);
-            valStr = (octVal >= 0) ? "+" + juce::String (octVal) : juce::String (octVal);
-        }
-        g.drawText ("Value: " + valStr, area.getX(), area.getY() + 45, area.getWidth(), 20, juce::Justification::centred);
+        displayArea.removeFromTop (4.0f);
 
-        // Active LFO Vibe Preset Name
-        g.setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold")));
-        g.setColour (juce::Colour (0xFF80D8FF)); // Ice Blue
-        g.drawText ("LFO Preset: " + activeLfoPresetName, area.getX(), area.getY() + 72, area.getWidth(), 20, juce::Justification::centred);
-
-        // Diagonal glass glare overlay
-        juce::Path glint; glint.startNewSubPath (0.0f, 0.0f); glint.lineTo (static_cast<float>(getWidth() * 0.45f), 0.0f); glint.lineTo (0.0f, static_cast<float>(getHeight() * 0.95f)); glint.closeSubPath();
-        juce::ColourGradient gr (juce::Colours::white.withAlpha (0.02f), 0.0f, 0.0f, juce::Colours::white.withAlpha (0.0f), static_cast<float>(getWidth() * 0.3f), static_cast<float>(getHeight() * 0.6f), false);
-        g.setGradientFill (gr); g.fillPath (glint);
-        return;
-    }
-
-    // 2. Standard View (8-Step VU Meters & Display)
-    auto headerArea = getLocalBounds().removeFromTop (25); g.setColour (juce::Colour (0xFF181C24)); g.fillRect (headerArea);
-    g.setColour (juce::Colour (0xFFFFFFFF)); g.setFont (juce::Font (juce::FontOptions (12.5f).withStyle ("Bold")));
-    g.drawText ("NAVY-ARP MONITOR", headerArea, juce::Justification::centred, true);
-
-    juce::String scaleName = processor.apvts.getParameter(IDs::scaleType.getParamID())->getCurrentValueAsText();
-    juce::String keyName = processor.apvts.getParameter(IDs::rootKey.getParamID())->getCurrentValueAsText();
-    juce::String speedRate = processor.apvts.getParameter(IDs::rate.getParamID())->getCurrentValueAsText();
-    int octValue = static_cast<int>(*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
-    juce::String activeOcts = (octValue >= 0) ? "+" + juce::String (octValue) : juce::String (octValue);
-    g.setFont (juce::Font (juce::FontOptions (9.5f))); g.setColour (juce::Colour (0xFFFFB300));
-    g.drawText ("KEY: " + keyName + " | SCALE: " + scaleName + " | VOICE: TRIAD | RATE: " + speedRate + " | OCT: " + activeOcts, 10, 27, getWidth() - 20, 15, juce::Justification::centred);
-
-    area.removeFromTop (27);
-    int barWidth = area.getWidth() / 8, spacing = 6;
-    for (int i = 0; i < 8; ++i) {
-        float faderProb = *processor.apvts.getRawParameterValue ("fader" + juce::String (i + 1));
-        int stepSegments = static_cast<int>((area.getHeight() - 20) * faderProb * 0.75f) / 8;
-        juce::Rectangle<int> bar (area.getX() + (i * barWidth) + spacing, area.getBottom() - (stepSegments * 8) - 15, barWidth - (spacing * 2), stepSegments * 8);
+        // Render Base Value Bar
+        auto valueBarArea = displayArea.removeFromTop (12.0f);
         
-        bool isPlaying = processor.isCurrentlyPlayingUI.load();
-        for (int seg = 0; seg < stepSegments; ++seg) {
-            int segY = bar.getBottom() - (seg * 8) - 6;
-            g.setColour ((isPlaying && processor.currentStep == i) ? t.leftAccent : t.leftAccent.withAlpha (0.4f));
-            g.fillRect (bar.getX(), segY, bar.getWidth(), 6);
-        }
-        juce::String stepNumStr = juce::String (i + 1); g.setFont (juce::Font (juce::FontOptions (9.0f)));
-        g.setColour ((isPlaying && processor.currentStep == i) ? juce::Colours::white : juce::Colour (0xFF3A3F4E));
-        g.drawText (stepNumStr, area.getX() + (i * barWidth), area.getBottom() - 12, barWidth, 12, juce::Justification::centred);
+        // Draw empty track background
+        g.setColour (juce::Colours::darkgrey.withAlpha (0.3f));
+        g.fillRoundedRectangle (valueBarArea, 2.0f);
+        
+        // Draw filled amount
+        float fillWidth = valueBarArea.getWidth() * activeParamValue;
+        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colour::fromString ("#FF2196F3"));
+        g.fillRoundedRectangle (valueBarArea.withWidth (fillWidth), 2.0f);
+
+        displayArea.removeFromTop (6.0f);
+
+        // Metadata Text
+        g.setColour (juce::Colours::lightgrey);
+        g.setFont (juce::FontOptions (9.5f, juce::Font::plain));
+        
+        juce::String valuePercentStr = "VAL: " + juce::String (static_cast<int> (activeParamValue * 100.0f)) + "%";
+        g.drawText (valuePercentStr, displayArea.removeFromTop (12.0f), juce::Justification::left, true);
+
+        g.drawText ("LFO: " + activeLfoVibe, displayArea.removeFromTop (12.0f), juce::Justification::left, true);
     }
-    juce::Path glint; glint.startNewSubPath (0.0f, 0.0f); glint.lineTo (static_cast<float>(getWidth() * 0.45f), 0.0f); glint.lineTo (0.0f, static_cast<float>(getHeight() * 0.95f)); glint.closeSubPath();
-    juce::ColourGradient gr (juce::Colours::white.withAlpha (0.02f), 0.0f, 0.0f, juce::Colours::white.withAlpha (0.0f), static_cast<float>(getWidth() * 0.3f), static_cast<float>(getHeight() * 0.6f), false);
-    g.setGradientFill (gr); g.fillPath (glint);
+    else
+    {
+        // =====================================================================
+        // RENDER: STANDARD VU MONITOR & STEPS
+        // =====================================================================
+        
+        // Draw Step Numbers Header
+        g.setColour (juce::Colours::grey);
+        g.setFont (juce::FontOptions (9.0f, juce::Font::plain));
+        
+        auto stepNumbersArea = displayArea.removeFromTop (12.0f);
+        float stepWidth = stepNumbersArea.getWidth() / 8.0f;
+        for (int i = 0; i < 8; ++i)
+        {
+            g.drawText (juce::String (i + 1), 
+                        stepNumbersArea.removeFromLeft (stepWidth), 
+                        juce::Justification::centred, true);
+        }
+
+        displayArea.removeFromTop (8.0f);
+
+        // Render Two Channels VU Monitor Bars
+        float vuBarHeight = 6.0f;
+        auto leftVuArea = displayArea.removeFromTop (vuBarHeight);
+        displayArea.removeFromTop (4.0f);
+        auto rightVuArea = displayArea.removeFromTop (vuBarHeight);
+
+        // Draw left background + meter level
+        g.setColour (juce::Colours::darkgrey.withAlpha (0.2f));
+        g.fillRoundedRectangle (leftVuArea, 2.0f);
+        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colour::fromString ("#FF4CAF50"));
+        g.fillRoundedRectangle (leftVuArea.withWidth (leftVuArea.getWidth() * leftVuLevel), 2.0f);
+
+        // Draw right background + meter level
+        g.setColour (juce::Colours::darkgrey.withAlpha (0.2f));
+        g.fillRoundedRectangle (rightVuArea, 2.0f);
+        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colour::fromString ("#FF4CAF50"));
+        g.fillRoundedRectangle (rightVuArea.withWidth (rightVuArea.getWidth() * rightVuLevel), 2.0f);
+
+        // Simulate micro meter fluctuations (inertial bounce feel)
+        leftVuLevel = juce::jlimit (0.01f, 0.99f, leftVuLevel + juce::Random::getSystemRandom().nextFloat() * 0.1f - 0.05f);
+        rightVuLevel = juce::jlimit (0.01f, 0.99f, rightVuLevel + juce::Random::getSystemRandom().nextFloat() * 0.1f - 0.05f);
+    }
+}
+
+void OledDisplay::resized()
+{
 }

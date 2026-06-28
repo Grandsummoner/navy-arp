@@ -1,33 +1,37 @@
 #pragma once
 
-#include <juce_gui_basics/juce_gui_basics.h>
-#include "PluginProcessor.h"
-#include "AppTheme.h"
+#include <JuceHeader.h>
 
-class OledDisplay : public juce::Component, public juce::Timer
+class OledDisplay : public juce::Component,
+                    private juce::Timer
 {
 public:
-    OledDisplay (PluginProcessor& p);
+    OledDisplay();
     ~OledDisplay() override;
 
-    void timerCallback() override;
-    void paint (juce::Graphics& g) override;
+    void paint (juce::Graphics&) override;
+    void resized() override;
 
-    // Momentary Parameter Card Overlay Trigger Method
-    void showParameter (const juce::String& paramName, float value, const juce::String& lfoName);
+    // Triggered when any parameter is adjusted in the editor
+    void showParameterOverlay (const juce::String& paramName, float baseValue, const juce::String& lfoVibeText);
+
+    // Track active freeze visual state
+    void setFreezeActive (bool shouldBeActive);
 
 private:
-    PluginProcessor& processor;
-    int lastLfoRates[8] = { 0 };
-    float lastLfoDepths[8] = { 0.0f };
-    int lfoOverlayTimer = 0;
-    int lfoActiveParamIdx = -1;
+    void timerCallback() override;
 
-    // Momentary Overlay State Tracking
+    // Active screen visual state indicators
+    bool isOverlayActive = false;
+    bool isFreezeActive = false;
+
     juce::String activeParamName;
     float activeParamValue = 0.0f;
-    juce::String activeLfoPresetName;
-    int overlayTimer = 0;
+    juce::String activeLfoVibe;
+
+    // VU Levels (used when overlay is inactive)
+    float leftVuLevel = 0.0f;
+    float rightVuLevel = 0.0f;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OledDisplay)
 };
