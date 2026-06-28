@@ -12,15 +12,21 @@ if(MSVC)
     add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
+# Include JUCE Framework sub-repository
 if(NOT TARGET juce::juce_recommended_config_flags)
     add_subdirectory(JUCE)
+endif()
+
+# Include CLAP JUCE Extensions sub-repository
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/modules/clap-juce-extensions")
+    add_subdirectory(modules/clap-juce-extensions EXCLUDE_FROM_ALL)
 endif()
 
 # Define the main Audio Plugin Target
 juce_add_plugin(NavyArp
     VERSION "1.0.0"
     ICON_LOCAL_PATH "assets/images/icon.png"
-    FORMATS Standalone VST3 CLAP
+    FORMATS Standalone VST3
     PRODUCT_NAME "Navy Arp"
     PLUGIN_NAME "Navy Arp"
     COMPANY_NAME "Navy Audio"
@@ -32,6 +38,14 @@ juce_add_plugin(NavyArp
 
 # Instructs CMake to generate the JuceHeader.h file in the build tree
 juce_generate_juce_header(NavyArp)
+
+# Generate the companion CLAP format target if the extension subdirectory is loaded
+if(TARGET clap_juce_extensions)
+    clap_juce_extensions_plugin(TARGET NavyArp
+        CLAP_ID "com.Navy Audio.NavyArp"
+        CLAP_FEATURES "arpeggiator" "utility" "midi"
+    )
+endif()
 
 # Target Source Files Listing
 target_sources(NavyArp PRIVATE
