@@ -24,6 +24,10 @@ jobs:
         with:
           submodules: recursive
 
+      # Forces the runner to use MSVC (cl.exe) instead of MinGW/GCC
+      - name: Set up MSVC Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Configure CMake
         run: cmake -B Builds -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -G Ninja .
 
