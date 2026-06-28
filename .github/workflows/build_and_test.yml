@@ -15,16 +15,8 @@ env:
 
 jobs:
   build:
-    name: Build (${{ matrix.name }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: macos-latest
-            name: macOS
-          - os: windows-latest
-            name: Windows
+    name: Build (Windows)
+    runs-on: windows-latest
 
     steps:
       - name: Checkout Code
@@ -38,16 +30,7 @@ jobs:
       - name: Build Plugin & Standalone
         run: cmake --build Builds --config ${{ env.BUILD_TYPE }} --parallel
 
-      - name: Locate Built Artifacts (macOS)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          mkdir -p Artifacts/VST3 Artifacts/Standalone
-          cp -R "Builds/NavyArp_artefacts/${{ env.BUILD_TYPE }}/VST3/Navy Arp.vst3" Artifacts/VST3/
-          cp -R "Builds/NavyArp_artefacts/${{ env.BUILD_TYPE }}/Standalone/Navy Arp.app" Artifacts/Standalone/
-
-      - name: Locate Built Artifacts (Windows)
-        if: runner.os == 'Windows'
+      - name: Locate Built Artifacts
         shell: bash
         run: |
           mkdir -p Artifacts/VST3 Artifacts/Standalone
@@ -57,11 +40,11 @@ jobs:
       - name: Upload Built VST3
         uses: actions/upload-artifact@v4
         with:
-          name: NavyArp-${{ matrix.name }}-VST3
+          name: NavyArp-Windows-VST3
           path: Artifacts/VST3/
 
       - name: Upload Built Standalone
         uses: actions/upload-artifact@v4
         with:
-          name: NavyArp-${{ matrix.name }}-Standalone
+          name: NavyArp-Windows-Standalone
           path: Artifacts/Standalone/
