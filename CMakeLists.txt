@@ -70,3 +70,6 @@ target_link_libraries(SharedCode
 target_link_libraries("${PROJECT_NAME}" PRIVATE SharedCode)
 
 include(PamplejuceIPP)
+
+# Restored GitHubENV so the GitHub Actions runner can find the generated .env file
+include(GitHubENV)
