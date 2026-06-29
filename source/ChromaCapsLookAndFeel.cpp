@@ -1,5 +1,6 @@
 #include "ChromaCapsLookAndFeel.h"
 #include "PluginProcessor.h"
+#include "PluginEditor.h"
 
 ChromaCapsLookAndFeel::ChromaCapsLookAndFeel (PluginProcessor& p, juce::AudioProcessorEditor* editor)
     : processor (p), parentEditor (editor)
@@ -16,28 +17,53 @@ void ChromaCapsLookAndFeel::drawButtonText (juce::Graphics& g, juce::TextButton&
     
     auto& lf = button.getLookAndFeel();
     g.setFont (lf.getTextButtonFont (button, button.getHeight()));
+
+    int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
     
     const bool isButtonA = (button.getButtonText() == "A");
     const bool isButtonB = (button.getButtonText() == "B");
     
-    if (isButtonA || isButtonB)
+    if (themeIdx == 1) // Skyline Eurorack (Light Beige Theme)
     {
-        const bool isSceneB = processor.isSceneBActiveAnchor.load();
-        const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
-        
-        if (isActiveAnchor)
-            g.setColour (juce::Colours::black); 
+        if (isButtonA || isButtonB)
+        {
+            const bool isSceneB = processor.isSceneBActiveAnchor.load();
+            const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
+            
+            if (isActiveAnchor)
+                g.setColour (juce::Colour (0xFFFF5533)); // High contrast orange-red text
+            else
+                g.setColour (juce::Colour (0xFF55555C));
+        }
+        else if (button.getClickingTogglesState() && button.getToggleState())
+        {
+            g.setColour (juce::Colour (0xFFFF5533)); // Orange-red text on active toggle
+        }
         else
-            g.setColour (juce::Colours::white.withAlpha (0.7f));
+        {
+            g.setColour (button.findColour (juce::TextButton::textColourOffId).withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f));
+        }
     }
-    else if (button.getClickingTogglesState() && button.getToggleState())
+    else // Dark Themes
     {
-        // High contrast bold black text on active glowing toggle buttons
-        g.setColour (juce::Colours::black);
-    }
-    else
-    {
-        g.setColour (button.findColour (juce::TextButton::textColourOffId).withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f));
+        if (isButtonA || isButtonB)
+        {
+            const bool isSceneB = processor.isSceneBActiveAnchor.load();
+            const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
+            
+            if (isActiveAnchor)
+                g.setColour (juce::Colours::black); 
+            else
+                g.setColour (juce::Colours::white.withAlpha (0.7f));
+        }
+        else if (button.getClickingTogglesState() && button.getToggleState())
+        {
+            g.setColour (juce::Colours::black); // Black text on bright Cyan active toggles
+        }
+        else
+        {
+            g.setColour (button.findColour (juce::TextButton::textColourOffId).withMultipliedAlpha (button.isEnabled() ? 1.0f : 0.5f));
+        }
     }
     
     const int indent = 2;
@@ -53,27 +79,100 @@ void ChromaCapsLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Butto
     auto bounds = button.getLocalBounds().toFloat();
     const float cornerSize = 4.0f;
     auto baseColour = backgroundColour;
+    bool isFlashing = false;
 
-    const bool isButtonA = (button.getButtonText() == "A");
-    const bool isButtonB = (button.getButtonText() == "B");
+    int themeIdx = static_cast<int> (processor.apvts.getRawParameterValue ("panelTheme")->load());
 
-    if (isButtonA || isButtonB)
+    // 1. Process active preset and utility flash states
+    if (auto* editor = dynamic_cast<PluginEditor*> (parentEditor))
     {
-        const bool isSceneB = processor.isSceneBActiveAnchor.load();
-        const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
+        for (int i = 0; i < 8; ++i)
+        {
+            if (&button == &(editor->presetButtons[i]))
+            {
+                if (editor->presetFlashTimer[i] > 0)
+                {
+                    isFlashing = true;
+                    if (editor->presetFlashType[i] == 1) // Save flash
+                        baseColour = juce::Colour (0xFFFF5533); // Red-Orange flash
+                    else if (editor->presetFlashType[i] == 2) // Recall flash
+                        baseColour = juce::Colour (0xFF00D2FF); // Ice Blue/Cyan flash
+                }
+                break;
+            }
+        }
 
-        if (isActiveAnchor)
-            baseColour = juce::Colour (0xFF00D2FF); // Active anchor highlighted in Cyan
-        else
-            baseColour = juce::Colour (0xFF2A2D36); // Inactive dark background
+        if (!isFlashing)
+        {
+            if (&button == &(editor->saveButton) && editor->saveFlashTimer > 0)
+            {
+                baseColour = juce::Colour (0xFFFF5533);
+                isFlashing = true;
+            }
+            else if (&button == &(editor->recallButton) && editor->recallFlashTimer > 0)
+            {
+                baseColour = juce::Colour (0xFF00D2FF);
+                isFlashing = true;
+            }
+            else if (&button == &(editor->copyButton) && editor->copyFlashTimer > 0)
+            {
+                baseColour = juce::Colour (0xFFFFFF33);
+                isFlashing = true;
+            }
+            else if (&button == &(editor->initButton) && editor->initFlashTimer > 0)
+            {
+                baseColour = juce::Colour (0xFFFF5533);
+                isFlashing = true;
+            }
+        }
     }
-    else if (button.getClickingTogglesState())
+
+    // 2. Render standard static or active background based on theme selections
+    if (!isFlashing)
     {
-        // Handles Latch, Seq, Poly, and Freeze toggle states
-        if (button.getToggleState())
-            baseColour = juce::Colour (0xFF00D2FF); // High contrast Cyan on active toggle state
-        else
-            baseColour = juce::Colour (0xFF2D313A); // Dark charcoal on inactive state
+        const bool isButtonA = (button.getButtonText() == "A");
+        const bool isButtonB = (button.getButtonText() == "B");
+
+        if (themeIdx == 1) // Skyline Eurorack (Light Beige Theme)
+        {
+            if (isButtonA || isButtonB)
+            {
+                const bool isSceneB = processor.isSceneBActiveAnchor.load();
+                const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
+
+                if (isActiveAnchor)
+                    baseColour = juce::Colour (0xFFFFE5DD); // Gentle light red-orange highlight background
+                else
+                    baseColour = juce::Colour (0xFFD8D4CC);
+            }
+            else if (button.getClickingTogglesState())
+            {
+                if (button.getToggleState())
+                    baseColour = juce::Colour (0xFFFFE5DD); // Gentle highlight background
+                else
+                    baseColour = juce::Colour (0xFFD8D4CC);
+            }
+        }
+        else // Dark Themes
+        {
+            if (isButtonA || isButtonB)
+            {
+                const bool isSceneB = processor.isSceneBActiveAnchor.load();
+                const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
+
+                if (isActiveAnchor)
+                    baseColour = juce::Colour (0xFF00D2FF); // Active anchor Cyan
+                else
+                    baseColour = juce::Colour (0xFF242730);
+            }
+            else if (button.getClickingTogglesState())
+            {
+                if (button.getToggleState())
+                    baseColour = juce::Colour (0xFF00D2FF); // Cyan active toggle
+                else
+                    baseColour = juce::Colour (0xFF2D313A);
+            }
+        }
     }
 
     if (shouldDrawButtonAsDown)
@@ -84,8 +183,25 @@ void ChromaCapsLookAndFeel::drawButtonBackground (juce::Graphics& g, juce::Butto
     g.setColour (baseColour);
     g.fillRoundedRectangle (bounds, cornerSize);
 
-    // Draw thin outline
-    g.setColour (button.findColour (juce::ComboBox::outlineColourId, true).withAlpha (0.15f));
+    // 3. Draw thin outline (Orange-Red on active toggles for Skyline theme)
+    if (themeIdx == 1 && !isFlashing)
+    {
+        const bool isButtonA = (button.getButtonText() == "A");
+        const bool isButtonB = (button.getButtonText() == "B");
+        const bool isSceneB = processor.isSceneBActiveAnchor.load();
+        const bool isActiveAnchor = (isButtonA && !isSceneB) || (isButtonB && isSceneB);
+        const bool isToggleOn = button.getClickingTogglesState() && button.getToggleState();
+
+        if (isActiveAnchor || isToggleOn)
+            g.setColour (juce::Colour (0xFFFF5533)); // Red-Orange border outline
+        else
+            g.setColour (juce::Colour (0xFF70757D).withAlpha (0.4f));
+    }
+    else
+    {
+        g.setColour (button.findColour (juce::ComboBox::outlineColourId, true).withAlpha (0.15f));
+    }
+
     g.drawRoundedRectangle (bounds.reduced (0.5f), cornerSize, 1.0f);
 }
 
@@ -111,21 +227,19 @@ void ChromaCapsLookAndFeel::drawLinearSlider (juce::Graphics& g, int x, int y, i
         g.setColour (juce::Colours::black.withAlpha (0.4f));
         g.fillRoundedRectangle (trackX, static_cast<float>(y), trackWidth, static_cast<float>(height), 3.0f);
 
-        // Real-Time per-fader level meters rendering
+        // Real-Time per-fader level meters rendering (Cyan track glows)
         if (slider.getComponentID().startsWith ("fader"))
         {
-            // Parse out fader index from ComponentID (e.g. fader1 -> 0, fader2 -> 1)
             int faderIndex = slider.getComponentID().getLastCharacters (1).getIntValue() - 1;
             if (faderIndex >= 0 && faderIndex < 8)
             {
                 float level = processor.currentSlewValue[faderIndex];
                 if (level > 0.01f)
                 {
-                    // Draw a glowing level meter indicator rising from the bottom of the slot track
                     float levelHeight = static_cast<float> (height) * level;
                     float levelY = static_cast<float> (y) + static_cast<float> (height) - levelHeight;
                     
-                    g.setColour (juce::Colour (0xFF00D2FF).withAlpha (level)); // Cyan fader meter glow
+                    g.setColour (juce::Colour (0xFF00D2FF).withAlpha (level)); // Dynamic Cyan level track meter
                     g.fillRoundedRectangle (trackX, levelY, trackWidth, levelHeight, 3.0f);
                 }
             }

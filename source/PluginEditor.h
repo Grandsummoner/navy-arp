@@ -22,9 +22,6 @@ public:
     void mouseDown (const juce::MouseEvent& event) override;
     void mouseUp (const juce::MouseEvent& event) override;
 
-private:
-    void timerCallback() override;
-
     PluginProcessor& processor;
     OledDisplay oledDisplay;
     ChromaCapsLookAndFeel chromaLookAndFeel;
@@ -57,6 +54,20 @@ private:
     // Top Control bar Dropdowns
     juce::ComboBox rootKeyBox, scaleTypeBox, cycleLengthBox;
 
+    // PUBLIC Flash Timers for LookAndFeel Animation Access
+    int sceneAFlashTimer = 0;
+    int sceneBFlashTimer = 0;
+    int saveFlashTimer = 0;
+    int recallFlashTimer = 0;
+    int copyFlashTimer = 0;
+    int initFlashTimer = 0;
+
+    int presetFlashTimer[8] { 0 };
+    int presetFlashType[8] { 0 };
+
+private:
+    void timerCallback() override;
+
     // Slide Attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> fader1Attachment, fader2Attachment, fader3Attachment, fader4Attachment, fader5Attachment, fader6Attachment, fader7Attachment, fader8Attachment;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> rhythmMorphAttachment, restAttachment, legatoAttachment, rateAttachment;
@@ -68,17 +79,6 @@ private:
 
     // Dropdown Attachments
     std::unique_ptr<juce::AudioProcessorValueTreeState::ComboBoxAttachment> rootKeyAttachment, scaleTypeAttachment, cycleLengthAttachment;
-
-    // Timer Flash Variables
-    int sceneAFlashTimer = 0;
-    int sceneBFlashTimer = 0;
-    int saveFlashTimer = 0;
-    int recallFlashTimer = 0;
-    int copyFlashTimer = 0;
-    int initFlashTimer = 0;
-
-    int presetFlashTimer[8] { 0 };
-    int presetFlashType[8] { 0 };
 
     // Timing States
     std::uint32_t presetPressStartTime[8] { 0 };

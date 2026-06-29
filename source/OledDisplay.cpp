@@ -61,8 +61,7 @@ void OledDisplay::paint (juce::Graphics& g)
         // =====================================================================
         // RENDER: MOMENTARY PARAMETER OVERLAY SCREEN (ACTIVE ONLY ON INTERACTION)
         // =====================================================================
-        
-        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colours::white);
+        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colour (0xFFFF5533));
         g.setFont (juce::FontOptions (12.5f, juce::Font::bold));
         g.drawText (activeParamName.toUpperCase(), displayArea.removeFromTop (18.0f), juce::Justification::left, true);
 
@@ -73,7 +72,7 @@ void OledDisplay::paint (juce::Graphics& g)
         g.fillRoundedRectangle (valueBarArea, 2.0f);
         
         float fillWidth = valueBarArea.getWidth() * activeParamValue;
-        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colour (0xFF00D2FF));
+        g.setColour (isFreezeActive ? juce::Colour::fromString ("#FF80D8FF") : juce::Colour (0xFFFF5533));
         g.fillRoundedRectangle (valueBarArea.withWidth (fillWidth), 2.0f);
 
         displayArea.removeFromTop (6.0f);
@@ -88,59 +87,116 @@ void OledDisplay::paint (juce::Graphics& g)
     else
     {
         // =====================================================================
-        // RENDER: SEQUENCER PROGRESS GRID & RUNNING STEP PLAYHEAD
+        // RENDER: HIGH-CONTRAST METADATA HEADER & TITLE
         // =====================================================================
+        g.setColour (juce::Colours::white);
+        g.setFont (juce::FontOptions (12.0f, juce::Font::bold));
+        g.drawText ("NAVY-ARP MONITOR", displayArea.removeFromTop (16.0f), juce::Justification::centred, true);
+
+        displayArea.removeFromTop (3.0f);
+
+        // Fetch scale, root key, voice, rates, and octaves choices dynamically from the APVTS parameters
+        int rootKeyIdx = juce::jlimit (0, 11, static_cast<int> (*processor.apvts.getRawParameterValue (IDs::rootKey.getParamID())));
+        juce::StringArray keys { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B" };
+        juce::String keyStr = keys[rootKeyIdx];
+
+        int scaleIdx = juce::jlimit (0, 9, static_cast<int> (*processor.apvts.getRawParameterValue (IDs::scaleType.getParamID())));
+        juce::StringArray scales { "Major", "Natural Minor", "Pentatonic Minor", "Pentatonic Major", "Dorian", "Phrygian", "Lydian", "Mixolydian", "Harmonic Minor", "Melodic Minor" };
+        juce::String scaleStr = scales[scaleIdx];
+
+        bool isPolyActive = *processor.apvts.getRawParameterValue (IDs::poly.getParamID()) > 0.5f;
+        float currentHarmony = *processor.apvts.getRawParameterValue (IDs::harmony.getParamID());
+        juce::String voiceStr = "MONO";
+        if (isPolyActive)
+        {
+            if (currentHarmony >= 0.25f && currentHarmony < 0.5f) voiceStr = "DUO";
+            else if (currentHarmony >= 0.5f) voiceStr = "TRIAD";
+            else voiceStr = "MONO";
+        }
+
+        int rateIdx = juce::jlimit (0, 3, static_cast<int> (*processor.apvts.getRawParameterValue (IDs::rate.getParamID())));
+        juce::StringArray rates { "1/4", "1/8", "1/16", "1/32" };
+        juce::String rateStr = rates[rateIdx];
+
+        int rangeShift = static_cast<int> (*processor.apvts.getRawParameterValue (IDs::octaves.getParamID()));
+        juce::String octStr = (rangeShift >= 0 ? "+" : "") + juce::String (rangeShift);
+
+        juce::String metaText = "KEY: " + keyStr + " | SCALE: " + scaleStr + " | VOICE: " + voiceStr + " | RATE: " + rateStr + " | OCT: " + octStr;
         
-        g.setColour (juce::Colours::grey);
-        g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
-        
-        auto stepArea = displayArea.removeFromTop (24.0f);
-        const float totalSpacing = 4.0f;
-        const float stepWidth = (stepArea.getWidth() - (7.0f * totalSpacing)) / 8.0f;
-        const int activeStep = processor.currentStep; // Fetches the actual running playhead step
+        g.setColour (juce::Colour (0xFFFFB300)); // Gold/Yellow metadata font
+        g.setFont (juce::FontOptions (9.5f, juce::Font::bold));
+        g.drawText (metaText, displayArea.removeFromTop (12.0f), juce::Justification::centred, true);
+
+        displayArea.removeFromTop (8.0f);
+
+        // =====================================================================
+        // RENDER: 8 SEGMENTED LED LADDERS (STEP LEVEL MONITOR)
+        // =====================================================================
+        const float spacing = 6.0f;
+        const float colWidth = (displayArea.getWidth() - (7.0f * spacing)) / 8.0f;
+        const int activeStep = processor.currentStep;
         const bool isPlaying = processor.isCurrentlyPlayingUI.load();
 
-        // Draw 8 horizontal sequencer step blocks
+        const float morphVal = *processor.apvts.getRawParameterValue (IDs::morph.getParamID());
+        const int numSegments = 12;
+        const float segmentHeight = 2.0f;
+        const float segmentSpacing = 1.0f;
+        const float maxLaddersHeight = (numSegments * segmentHeight) + ((numSegments - 1) * segmentSpacing);
+
+        auto laddersArea = displayArea.removeFromTop (maxLaddersHeight);
+
         for (int i = 0; i < 8; ++i)
         {
-            auto cell = stepArea.removeFromLeft (stepWidth);
+            auto colBounds = laddersArea.removeFromLeft (colWidth);
             
-            // Draw step container background
-            g.setColour (juce::Colour (0xFF181C24).withAlpha (0.6f));
-            g.fillRoundedRectangle (cell, 2.0f);
+            // Fetch morphed fader level for this step dynamically
+            float faderVal = (processor.sceneA.faders[i] * (1.0f - morphVal)) + (processor.sceneB.faders[i] * morphVal);
+            int activeSegments = static_cast<int> (std::round (faderVal * static_cast<float> (numSegments)));
 
-            // Highlight the cell that matches the active playhead step in real-time
-            if (isPlaying && i == activeStep)
+            const bool isActiveStep = isPlaying && (i == activeStep);
+
+            // Draw individual segmented horizontal blocks bottom-up
+            for (int seg = 0; seg < numSegments; ++seg)
             {
-                g.setColour (isFreezeActive ? juce::Colour (0xFF80D8FF) : juce::Colour (0xFF00D2FF));
-                g.fillRoundedRectangle (cell, 2.0f);
-                g.setColour (juce::Colours::black);
+                float segY = colBounds.getY() + maxLaddersHeight - ((seg + 1) * (segmentHeight + segmentSpacing));
+                auto segmentRect = juce::Rectangle<float> (colBounds.getX() + 2.0f, segY, colBounds.getWidth() - 4.0f, segmentHeight);
+
+                if (seg < activeSegments)
+                {
+                    // Active filled segments
+                    if (isActiveStep)
+                        g.setColour (juce::Colour (0xFFFF4500)); // Glowing orange-red playhead
+                    else
+                        g.setColour (juce::Colour (0xFF441105)); // Muted dim red/brown
+                }
+                else
+                {
+                    // Unfilled empty segments
+                    g.setColour (juce::Colour (0xFF111317));
+                }
+
+                g.fillRect (segmentRect);
+            }
+
+            // Draw small step number indicator inside screen boundaries
+            float textY = colBounds.getY() + maxLaddersHeight + 4.0f;
+            auto stepNumRect = juce::Rectangle<float> (colBounds.getX(), textY, colBounds.getWidth(), 10.0f);
+            
+            if (isActiveStep)
+            {
+                g.setColour (juce::Colour (0xFFFF4500));
+                g.setFont (juce::FontOptions (8.5f, juce::Font::bold));
             }
             else
             {
-                g.setColour (juce::Colours::grey);
+                g.setColour (juce::Colours::grey.withAlpha (0.6f));
+                g.setFont (juce::FontOptions (8.0f, juce::Font::plain));
             }
 
-            g.setFont (juce::FontOptions (10.0f, juce::Font::bold));
-            g.drawText (juce::String (i + 1), cell, juce::Justification::centred, true);
-            stepArea.removeFromLeft (totalSpacing); // Advance column spacing
+            g.drawText (juce::String (i + 1), stepNumRect, juce::Justification::centred, true);
+
+            laddersArea.removeFromLeft (spacing); // Advance column offset
         }
-
-        displayArea.removeFromTop (14.0f);
-
-        // =====================================================================
-        // RENDER: PLAYBACK METADATA & CYCLES (VU METERS OMITTED)
-        // =====================================================================
-        g.setColour (juce::Colours::grey);
-        g.setFont (juce::FontOptions (10.0f, juce::Font::plain));
-
-        juce::String statusText = isPlaying ? "STATE: ACTIVE" : "STATE: STOPPED";
-        if (isFreezeActive) statusText = "STATE: FROZEN";
-
-        juce::String barCycleText = "BAR: " + juce::String (processor.currentBarInCycle);
-
-        g.drawText (statusText, displayArea.withWidth (150.0f), juce::Justification::left, true);
-        g.drawText (barCycleText, displayArea, juce::Justification::right, true);
     }
 }
 

@@ -294,8 +294,9 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
                 currentSlewTarget[currentStep] = 1.0f; // Spike active playing fader meter
             }
-            else {
-                currentSlewTarget[currentStep] = 0.2f; // Active playhead step highlight even if rest/probability blocks sound
+            else
+            {
+                currentSlewTarget[currentStep] = 0.22f; // Dim playhead track highlight on rest step
             }
         }
     } else { if (mLastStep != -1) { if (mLastNotePlayed != -1) { processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0); mLastNotePlayed = -1; } mLastStep = -1; } currentStep = 0; for (int i = 0; i < 8; ++i) currentSlewTarget[i] = 0.0f; }
