@@ -294,23 +294,11 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 
                 currentSlewTarget[currentStep] = 1.0f; // Spike active playing fader meter
             }
-            else
-            {
-                currentSlewTarget[currentStep] = 0.22f; // Dim playhead track highlight on rest step
+            else {
+                currentSlewTarget[currentStep] = 0.2f; // Active playhead step highlight even if rest/probability blocks sound
             }
         }
-    } else { 
-        if (mLastStep != -1) { 
-            if (mLastNotePlayed != -1) { 
-                processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0); 
-                mLastNotePlayed = -1; 
-            } 
-            mLastStep = -1; 
-        } 
-        currentStep = 0; 
-        for (int i = 0; i < 8; ++i)
-            currentSlewTarget[i] = 0.0f; // Instantly zero out level tracks on playhead stop
-    }
+    } else { if (mLastStep != -1) { if (mLastNotePlayed != -1) { processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0); mLastNotePlayed = -1; } mLastStep = -1; } currentStep = 0; for (int i = 0; i < 8; ++i) currentSlewTarget[i] = 0.0f; }
     midiMessages.swapWith (processedMidi);
 }
 
@@ -552,4 +540,10 @@ juce::AudioProcessorValueTreeState::ParameterLayout PluginProcessor::createParam
     regLfo (IDs::entropyLfoRate, IDs::entropyLfoDepth, "Entropy"); regLfo (IDs::harmonyLfoRate, IDs::harmonyLfoDepth, "Harmony"); regLfo (IDs::chaosLfoRate, IDs::chaosLfoDepth, "Chaos"); regLfo (IDs::octavesLfoRate, IDs::octavesLfoDepth, "Octaves");
 
     return { params.begin(), params.end() };
+}
+
+//==============================================================================
+juce::AudioProcessor* JUCE_CALLTYPE createPluginFilter()
+{
+    return new PluginProcessor();
 }
