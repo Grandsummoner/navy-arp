@@ -124,6 +124,29 @@ public:
     void loadPreset (int slotIndex);
     void captureScene (int side);
 
+    // Reconstructed Inline Helpers accessed by PluginEditor
+    void clearSceneA()
+    {
+        sceneA = SceneState();
+        hasSceneA = false;
+    }
+
+    void saveSceneA()
+    {
+        captureScene (0);
+    }
+
+    void clearSceneB()
+    {
+        sceneB = SceneState();
+        hasSceneB = false;
+    }
+
+    void saveSceneB()
+    {
+        captureScene (1);
+    }
+
     void resetAccumulator();
     void resetRhythm();
     void diceMelody();
