@@ -65,6 +65,9 @@ public:
     int presetFlashTimer[8] { 0 };
     int presetFlashType[8] { 0 };
 
+    // Tracks the source preset slot index during copy operations
+    int copySourcePresetIndex = -1;
+
 private:
     void timerCallback() override;
     void updateSliderTextBoxThemeColors(); // Declared utility helper

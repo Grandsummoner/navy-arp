@@ -132,10 +132,9 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 #endif
     int numSamples = buffer.getNumSamples(); updateLfoModulations (numSamples, bpm);
 
-    // Smoothly decay fader level meters over time
-    double decayFactor = std::exp (-1.0 / (0.12 * mSampleRate)); 
+    // Dynamic Slew Meter Decays
     for (int i = 0; i < 8; ++i)
-        currentSlewTarget[i] *= static_cast<float>(decayFactor);
+        currentSlewTarget[i] = std::max (0.0f, currentSlewTarget[i] - 0.00045f * numSamples);
 
     float slewFactor = static_cast<float>(1.0 - std::exp (-1.0 / (0.15 * mSampleRate)));
     for (int i = 0; i < 24; ++i) currentSlewValue[i] += (currentSlewTarget[i] - currentSlewValue[i]) * slewFactor;
@@ -404,11 +403,80 @@ void PluginProcessor::captureScene (int side)
 }
 
 void PluginProcessor::resetAccumulator() { accumulatedPitchOffset = 0.0f; }
-void PluginProcessor::resetRhythm() { for (int i = 1; i <= 8; ++i) apvts.getParameter ("fader" + juce::String(i))->setValueNotifyingHost (1.0f); }
-void PluginProcessor::diceMelody() { auto* r = &juce::Random::getSystemRandom(); for (int i = 1; i <= 8; ++i) apvts.getParameter ("fader" + juce::String(i))->setValueNotifyingHost (r->nextFloat()); }
-void PluginProcessor::diceArticulation() { auto* r = &juce::Random::getSystemRandom(); apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost (r->nextFloat() * 0.5f); apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost (0.1f + r->nextFloat() * 0.9f); }
-void PluginProcessor::diceTime() { auto* r = &juce::Random::getSystemRandom(); apvts.getParameter (IDs::rate.getParamID())->setValueNotifyingHost (static_cast<float>(r->nextInt(4)) / 3.0f); apvts.getParameter (IDs::octaves.getParamID())->setValueNotifyingHost (static_cast<float>(r->nextInt(7)) / 6.0f); apvts.getParameter (IDs::cycleLength.getParamID())->setValueNotifyingHost (static_cast<float>(r->nextInt(4)) / 3.0f); }
-void PluginProcessor::diceNavy() { auto* r = &juce::Random::getSystemRandom(); apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost (r->nextFloat()); apvts.getParameter (IDs::entropy.getParamID())->setValueNotifyingHost (r->nextFloat()); apvts.getParameter (IDs::harmony.getParamID())->setValueNotifyingHost (r->nextFloat()); apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost (r->nextFloat()); }
+
+void PluginProcessor::resetRhythm() 
+{ 
+    // Reset APVTS parameters so faders visually update to 1.0f
+    for (int i = 1; i <= 8; ++i) 
+        apvts.getParameter ("fader" + juce::String(i))->setValueNotifyingHost (1.0f); 
+
+    // Directly reset active scene buffer on message thread so memory is immediately cleared [43]
+    SceneState& activeScene = isSceneBActive() ? sceneB : sceneA;
+    for (int i = 0; i < 8; ++i)
+        activeScene.faders[i] = 1.0f;
+}
+
+void PluginProcessor::diceMelody() 
+{ 
+    auto* r = &juce::Random::getSystemRandom(); 
+    SceneState& activeScene = isSceneBActive() ? sceneB : sceneA;
+    for (int i = 1; i <= 8; ++i) 
+    {
+        float val = r->nextFloat();
+        apvts.getParameter ("fader" + juce::String(i))->setValueNotifyingHost (val); 
+        activeScene.faders[i - 1] = val; // Direct message thread capture [43]
+    }
+}
+
+void PluginProcessor::diceArticulation() 
+{ 
+    auto* r = &juce::Random::getSystemRandom(); 
+    float restVal = r->nextFloat() * 0.5f;
+    float legatoVal = 0.1f + r->nextFloat() * 0.9f;
+    
+    apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost (restVal); 
+    apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost (legatoVal); 
+
+    SceneState& activeScene = isSceneBActive() ? sceneB : sceneA;
+    activeScene.rest = restVal;
+    activeScene.legato = legatoVal; // Direct message thread capture [43]
+}
+
+void PluginProcessor::diceTime() 
+{ 
+    auto* r = &juce::Random::getSystemRandom(); 
+    float rateVal = static_cast<float>(r->nextInt(4)) / 3.0f;
+    float octVal = static_cast<float>(r->nextInt(7)) / 6.0f;
+    float cycleVal = static_cast<float>(r->nextInt(4)) / 3.0f;
+    
+    apvts.getParameter (IDs::rate.getParamID())->setValueNotifyingHost (rateVal); 
+    apvts.getParameter (IDs::octaves.getParamID())->setValueNotifyingHost (octVal); 
+    apvts.getParameter (IDs::cycleLength.getParamID())->setValueNotifyingHost (cycleVal); 
+
+    SceneState& activeScene = isSceneBActive() ? sceneB : sceneA;
+    activeScene.rate = rateVal * 3.0f;
+    activeScene.octaves = static_cast<float>(r->nextInt(7) - 3); // Direct message thread capture [43]
+}
+
+void PluginProcessor::diceNavy() 
+{ 
+    auto* r = &juce::Random::getSystemRandom(); 
+    float morphVal = r->nextFloat();
+    float entropyVal = r->nextFloat();
+    float harmonyVal = r->nextFloat();
+    float chaosVal = r->nextFloat();
+    
+    apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost (morphVal); 
+    apvts.getParameter (IDs::entropy.getParamID())->setValueNotifyingHost (entropyVal); 
+    apvts.getParameter (IDs::harmony.getParamID())->setValueNotifyingHost (harmonyVal); 
+    apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost (chaosVal); 
+
+    SceneState& activeScene = isSceneBActive() ? sceneB : sceneA;
+    activeScene.rhythmMorph = morphVal;
+    activeScene.entropy = -1.0f + entropyVal * 2.0f;
+    activeScene.harmony = harmonyVal;
+    activeScene.chaos = chaosVal; // Direct message thread capture [43]
+}
 
 void PluginProcessor::diceActiveSceneA()
 {

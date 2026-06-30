@@ -28,7 +28,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     juce::String leftNames[] = { "Morph", "Rest", "Legato", "Rate" }, leftPrefixes[] = { "rhythmMorph", "rest", "legato", "rate" };
     for (int i = 0; i < 4; ++i) {
         leftKnobs[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag); leftKnobs[i]->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 65, 16);
-        leftKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFFFF5533)); leftKnobs[i]->setLookAndFeel (&chromaLookAndFeel); 
+        leftKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFF00D2FF)); leftKnobs[i]->setLookAndFeel (&chromaLookAndFeel); 
         leftKnobs[i]->setComponentID (leftPrefixes[i]); leftKnobs[i]->addMouseListener (this, false); addAndMakeVisible (leftKnobs[i]);
         leftTitles[i]->setText (leftNames[i], juce::dontSendNotification); leftTitles[i]->setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold"))); 
         leftTitles[i]->setJustificationType (juce::Justification::centred); leftTitles[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF55555C)); addAndMakeVisible (leftTitles[i]);
@@ -39,7 +39,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     juce::String rightNames[] = { "Entropy", "Harmony", "Chaos", "Octaves" }, rightPrefixes[] = { "entropy", "harmony", "chaos", "octaves" };
     for (int i = 0; i < 4; ++i) {
         rightKnobs[i]->setSliderStyle (juce::Slider::RotaryHorizontalVerticalDrag); rightKnobs[i]->setTextBoxStyle (juce::Slider::TextBoxBelow, false, 65, 16);
-        rightKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFFFF5533)); rightKnobs[i]->setLookAndFeel (&chromaLookAndFeel); 
+        rightKnobs[i]->setColour (juce::Slider::rotarySliderFillColourId, juce::Colour (0xFFFFB300)); rightKnobs[i]->setLookAndFeel (&chromaLookAndFeel); 
         rightKnobs[i]->setComponentID (rightPrefixes[i]); rightKnobs[i]->addMouseListener (this, false); addAndMakeVisible (rightKnobs[i]);
         rightTitles[i]->setText (rightNames[i], juce::dontSendNotification); rightTitles[i]->setFont (juce::Font (juce::FontOptions (10.0f).withStyle ("Bold"))); 
         rightTitles[i]->setJustificationType (juce::Justification::centred); rightTitles[i]->setColour (juce::Label::textColourId, juce::Colour (0xFF55555C)); addAndMakeVisible (rightKnobs[i]);
@@ -68,18 +68,46 @@ PluginEditor::PluginEditor (PluginProcessor& p)
     diceArtiButton.onClick = [this] { if (initButton.getToggleState()) { processor.apvts.getParameter(IDs::rest.getParamID())->setValueNotifyingHost(0.0f); processor.apvts.getParameter(IDs::legato.getParamID())->setValueNotifyingHost(0.5f); initFlashTimer = 24; initButton.setToggleState (false, juce::dontSendNotification); initButton.repaint(); } else { processor.diceArticulation(); } };
     
     addAndMakeVisible (diceTimeButton); diceTimeButton.setComponentID ("dice_time"); diceTimeButton.setButtonText ("Time"); diceTimeButton.setLookAndFeel (&chromaLookAndFeel); 
-    diceTimeButton.onClick = [this] { if (initButton.getToggleState()) { processor.diceTime(); initFlashTimer = 24; initButton.setToggleState (false, juce::dontSendNotification); initButton.repaint(); } else { processor.diceTime(); } };
+    diceTimeButton.onClick = [this] { 
+        if (initButton.getToggleState()) { 
+            // Re-mapped: Reset Time parameters back to default standard limits
+            processor.apvts.getParameter (IDs::rate.getParamID())->setValueNotifyingHost (2.0f / 3.0f); // Default 1/16
+            processor.apvts.getParameter (IDs::octaves.getParamID())->setValueNotifyingHost (3.0f / 6.0f); // Default +0
+            processor.apvts.getParameter (IDs::cycleLength.getParamID())->setValueNotifyingHost (2.0f / 3.0f); // Default 4 Bars
+            initFlashTimer = 24; 
+            initButton.setToggleState (false, juce::dontSendNotification); 
+            initButton.repaint(); 
+        } else { 
+            processor.diceTime(); 
+        } 
+    };
     
     addAndMakeVisible (diceNavyButton); diceNavyButton.setComponentID ("dice_navy"); diceNavyButton.setButtonText ("Navy"); diceNavyButton.setLookAndFeel (&chromaLookAndFeel); 
     diceNavyButton.onClick = [this] { if (initButton.getToggleState()) { processor.apvts.getParameter(IDs::rhythmMorph.getParamID())->setValueNotifyingHost(0.0f); processor.apvts.getParameter(IDs::entropy.getParamID())->setValueNotifyingHost(0.0f); processor.apvts.getParameter(IDs::harmony.getParamID())->setValueNotifyingHost(0.0f); processor.apvts.getParameter(IDs::chaos.getParamID())->setValueNotifyingHost(0.0f); initFlashTimer = 24; initButton.setToggleState (false, juce::dontSendNotification); initButton.repaint(); } else { processor.diceNavy(); } };
 
     sceneAButton.onClick = [this] {
         if (initButton.getToggleState()) { processor.clearSceneA(); sceneAFlashTimer = 24; initButton.setToggleState (false, juce::dontSendNotification); initButton.repaint(); }
-        else if (copyButton.getToggleState()) { processor.saveSceneA(); sceneAFlashTimer = 24; copyButton.setToggleState (false, juce::dontSendNotification); copyButton.repaint(); }
+        else if (copyButton.getToggleState()) { 
+            // Copy Scene B settings into Scene A (B to A)
+            processor.sceneA = processor.sceneB;
+            processor.hasSceneA = processor.hasSceneB;
+            sceneAFlashTimer = 24; 
+            sceneBFlashTimer = 24;
+            copyButton.setToggleState (false, juce::dontSendNotification); 
+            copyButton.repaint(); 
+        }
     };
     sceneBButton.onClick = [this] {
         if (initButton.getToggleState()) { processor.clearSceneB(); sceneBFlashTimer = 24; initButton.setToggleState (false, juce::dontSendNotification); initButton.repaint(); }
-        else if (copyButton.getToggleState()) { processor.saveSceneB(); sceneBFlashTimer = 24; copyButton.setToggleState (false, juce::dontSendNotification); copyButton.repaint(); }
+        else if (copyButton.getToggleState()) { 
+            // Copy Scene A settings into Scene B (A to B)
+            processor.sceneB = processor.sceneA;
+            processor.hasSceneB = processor.hasSceneA;
+            sceneAFlashTimer = 24; 
+            sceneBFlashTimer = 24;
+            copyButton.setToggleState (false, juce::dontSendNotification); 
+            copyButton.repaint(); 
+        }
     };
 
     for (int i = 0; i < 8; ++i) { addAndMakeVisible (presetButtons[i]); presetButtons[i].setButtonText (juce::String (i + 1)); presetButtons[i].addMouseListener (this, false); presetButtons[i].setLookAndFeel (&chromaLookAndFeel); }
@@ -124,6 +152,7 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     updateSliderTextBoxThemeColors();
 
+    // Sinks minimum height to 530px to force DAW wraps to reveal all rotary textboxes and knobs at launch!
     setResizable (true, true); setResizeLimits (700, 530, 1400, 920); setSize (850, 560); startTimerHz (30);
 }
 
@@ -173,8 +202,32 @@ void PluginEditor::mouseDown (const juce::MouseEvent& event)
                 initButton.repaint();
             }
             else if (saveButton.getToggleState()) { 
-                presetPressStartTime[i] = juce::Time::getMillisecondCounter(); 
-                presetAlreadySaved[i] = false; 
+                // INSTANT PRESET SAVING on Save latch mode click
+                processor.savePreset (i);
+                presetFlashTimer[i] = 24;
+                presetFlashType[i] = 1; // 3-Blink Red/Orange Save Flash
+                saveButton.setToggleState (false, juce::dontSendNotification);
+                saveButton.repaint();
+            }
+            else if (copyButton.getToggleState()) {
+                if (copySourcePresetIndex == -1) {
+                    // First Click: Select Source Preset Slot
+                    copySourcePresetIndex = i;
+                    presetFlashTimer[i] = 24;
+                    presetFlashType[i] = 2; // Cyan highlight flash
+                }
+                else {
+                    // Second Click: Perform Preset Slot Copy (Source to Destination)
+                    if (copySourcePresetIndex != i) {
+                        processor.presets[i] = processor.presets[copySourcePresetIndex];
+                        processor.presetSlotsSaved[i] = processor.presetSlotsSaved[copySourcePresetIndex];
+                        presetFlashTimer[i] = 24;
+                        presetFlashType[i] = 1; // 3-Blink Red/Orange Destination Flash
+                    }
+                    copySourcePresetIndex = -1; // Reset copy source
+                    copyButton.setToggleState (false, juce::dontSendNotification);
+                    copyButton.repaint();
+                }
             }
             else if (recallButton.getToggleState()) {
                 processor.loadPreset (i); presetFlashTimer[i] = 24; presetFlashType[i] = 2;
