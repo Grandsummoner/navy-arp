@@ -2,7 +2,14 @@
 #include "PluginEditor.h"
 
 PluginProcessor::PluginProcessor()
-    : AudioProcessor (BusesProperties().withInput("Input", juce::AudioChannelSet::stereo(), true).withOutput("Output", juce::AudioChannelSet::stereo(), true)),
+    : AudioProcessor (BusesProperties()
+                      #if ! JucePlugin_IsMidiEffect
+                       #if ! JucePlugin_IsSynth
+                        .withInput  ("Input",  juce::AudioChannelSet::stereo(), true)
+                       #endif
+                        .withOutput ("Output", juce::AudioChannelSet::stereo(), true)
+                      #endif
+                      ),
       apvts (*this, nullptr, "PARAMETERS", createParameterLayout())
 {
     sceneA = SceneState(); sceneB = SceneState(); lastChordPitches = { 60, 64, 67 }; 
@@ -132,10 +139,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
 #endif
     int numSamples = buffer.getNumSamples(); updateLfoModulations (numSamples, bpm);
 
-    // Dynamic Slew Meter Decays
-    for (int i = 0; i < 8; ++i)
-        currentSlewTarget[i] = std::max (0.0f, currentSlewTarget[i] - 0.00045f * numSamples);
-
     float slewFactor = static_cast<float>(1.0 - std::exp (-1.0 / (0.15 * mSampleRate)));
     for (int i = 0; i < 24; ++i) currentSlewValue[i] += (currentSlewTarget[i] - currentSlewValue[i]) * slewFactor;
 
@@ -244,10 +247,6 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
             }
             mLastStep = currentStep;
 
-            // Drive Signal to Fader UI Level Meters on clock triggering
-            for (int i = 0; i < 8; ++i)
-                currentSlewTarget[i] = 0.0f;
-
             float faderProb = isFreezeActive ? frozenFaders[currentStep] : morphedFaders[currentStep];
             float currentRest = isFreezeActive ? frozenRest : modRest;
             if (juce::Random::getSystemRandom().nextFloat() <= faderProb && !(juce::Random::getSystemRandom().nextFloat() <= currentRest)) {
@@ -291,15 +290,9 @@ void PluginProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::Midi
                     processedMidi.addEvent (juce::MidiMessage::noteOn (1, targetPitch, static_cast<juce::uint8>(100)), 0);
                     mLastNotePlayed = targetPitch; mNoteOffTime = static_cast<int>(stepSamples * currentLegato); scheduleNoteOff (processedMidi, targetPitch, mNoteOffTime);
                 }
-
-                currentSlewTarget[currentStep] = 1.0f; // Spike active playing fader meter
-            }
-            else
-            {
-                currentSlewTarget[currentStep] = 0.22f; // Dim playhead highlight on rest step
             }
         }
-    } else { if (mLastStep != -1) { if (mLastNotePlayed != -1) { processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0); mLastNotePlayed = -1; } mLastStep = -1; } currentStep = 0; for (int i = 0; i < 8; ++i) currentSlewTarget[i] = 0.0f; }
+    } else { if (mLastStep != -1) { if (mLastNotePlayed != -1) { processedMidi.addEvent (juce::MidiMessage::noteOff (1, mLastNotePlayed), 0); mLastNotePlayed = -1; } mLastStep = -1; } currentStep = 0; }
     midiMessages.swapWith (processedMidi);
 }
 
