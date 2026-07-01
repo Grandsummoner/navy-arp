@@ -152,8 +152,8 @@ PluginEditor::PluginEditor (PluginProcessor& p)
 
     updateSliderTextBoxThemeColors();
 
-    // Sinks minimum height to 530px to force DAW wraps to reveal all rotary textboxes and knobs at launch!
-    setResizable (true, true); setResizeLimits (700, 530, 1400, 920); setSize (850, 560); startTimerHz (30);
+    // Increased default height and minimum limit to provide ample vertical clearance for rotary knobs
+	setResizable (true, true); setResizeLimits (700, 620, 1400, 920); setSize (850, 650); startTimerHz (30);
 }
 
 PluginEditor::~PluginEditor() 
