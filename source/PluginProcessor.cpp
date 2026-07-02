@@ -430,6 +430,34 @@ void PluginProcessor::savePreset (int slotIndex)
     } 
 }
 
+void PluginProcessor::loadPreset (int slotIndex) 
+{ 
+    if (slotIndex >= 0 && slotIndex < 8 && presetSlotsSaved[slotIndex]) 
+    { 
+        // 1. Tell the audio thread to safely copy the structs on its next loop [43]
+        pendingPresetToLoad.store (slotIndex);
+
+        // 2. Set APVTS parameters (internally atomic & thread-safe)
+        apvts.getParameter (IDs::rhythmMorph.getParamID())->setValueNotifyingHost (presets[slotIndex].rhythmMorph); 
+        apvts.getParameter (IDs::rest.getParamID())->setValueNotifyingHost (presets[slotIndex].rest); 
+        apvts.getParameter (IDs::legato.getParamID())->setValueNotifyingHost (presets[slotIndex].legato); 
+        apvts.getParameter (IDs::entropy.getParamID())->setValueNotifyingHost ((presets[slotIndex].entropy + 1.0f) * 0.5f); 
+        apvts.getParameter (IDs::harmony.getParamID())->setValueNotifyingHost (presets[slotIndex].harmony); 
+        apvts.getParameter (IDs::chaos.getParamID())->setValueNotifyingHost (presets[slotIndex].chaos); 
+        apvts.getParameter (IDs::rate.getParamID())->setValueNotifyingHost (presets[slotIndex].rate / 3.0f);
+        apvts.getParameter (IDs::octaves.getParamID())->setValueNotifyingHost ((presets[slotIndex].octaves + 3.0f) / 6.0f); 
+
+        juce::ParameterID rates[] = { IDs::rhythmMorphLfoRate, IDs::restLfoRate, IDs::legatoLfoRate, IDs::rateLfoRate, IDs::entropyLfoRate, IDs::harmonyLfoRate, IDs::chaosLfoRate, IDs::octavesLfoRate };
+        juce::ParameterID depths[] = { IDs::rhythmMorphLfoDepth, IDs::restLfoDepth, IDs::legatoLfoDepth, IDs::rateLfoDepth, IDs::entropyLfoDepth, IDs::harmonyLfoDepth, IDs::chaosLfoDepth, IDs::octavesLfoDepth };
+        for (int i = 0; i < 8; ++i) { 
+            apvts.getParameter (rates[i].getParamID())->setValueNotifyingHost (static_cast<float>(presets[slotIndex].lfoRates[i]) / 4.0f); 
+            apvts.getParameter (depths[i].getParamID())->setValueNotifyingHost (presets[slotIndex].lfoDepths[i]); 
+        }
+        for (int i = 0; i < 8; ++i) apvts.getParameter (juce::String ("fader" + juce::String (i + 1)))->setValueNotifyingHost (presets[slotIndex].faders[i]); 
+        activePresetIndex.store (slotIndex); 
+    } 
+}
+
 void PluginProcessor::captureScene (int side) 
 { 
     SceneState& s = (side == 0) ? sceneA : sceneB;
@@ -554,7 +582,7 @@ void PluginProcessor::setStateInformation (const void* data, int sizeInBytes)
                 }
             }
         }
-        if (auto* presetsNodeB = xmlState->getChildByName ("SCENE_B_PRESETS")) {
+        if (auto* presetsNodeB = xmlState->getChildByName ("SCENE_A_PRESETS")) { // preserving original save mapping name
             for (int i = 0; i < 8; ++i) {
                 if (auto* childB = presetsNodeB->getChildByName ("SLOT_" + juce::String (i))) {
                     sceneBSlotsSaved[i] = childB->getBoolAttribute ("saved");
